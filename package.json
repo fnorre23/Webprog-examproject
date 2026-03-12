@@ -1,0 +1,16 @@
+{
+  "name": "examproject",
+  "version": "1.0.0",
+  "description": "A Wordle Battle Royale! Compete against your friends in a battle of the fewest guesses. But don't be too slow! Having the same amount of guesses result in a time tie.",
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@codeberg.org/fredlaust/WebProg-Examproject.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
