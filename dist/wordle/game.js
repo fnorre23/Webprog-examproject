@@ -1,7 +1,6 @@
-console.log('Here we go wordlin\''!)
-
+"use strict";
+console.log('Here we go wordlin\'');
 document.addEventListener("DOMContentLoaded", loadPage);
-
 function loadPage() {
     document.addEventListener('keydown', typeLetter);
     let outputBox = document.getElementById("outputBox");
@@ -10,19 +9,16 @@ function loadPage() {
         console.log('Changed color');
     }
 }
-
-function typeLetter(event: KeyboardEvent): void {
+function typeLetter(event) {
     let outputBox = document.getElementById('outputBox');
-    let char: string = String.fromCharCode(event.keyCode);
+    let char = String.fromCharCode(event.keyCode);
     console.log('Registered keypress: ' + char);
-
     if (outputBox != null) {
         outputBox.textContent = char;
     }
 }
-
-function checkWord(word: Array<string>) {
-    for (let i: number = 0; i < word.length; i++) {
-
+function checkWord(word) {
+    for (let i = 0; i < word.length; i++) {
     }
 }
+//# sourceMappingURL=game.js.map
