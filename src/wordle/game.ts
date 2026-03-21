@@ -26,25 +26,13 @@ let wordContainers: HTMLCollection = document.getElementsByClassName("wordContai
 let currentChar: number = 0;
 let currentGuess: number = 0;
 
-for (let i: number = 0; i < wordContainers.length; i++) {
-    let wordContainer: Element | undefined = wordContainers[i];
-
-    if (wordContainer != undefined) {
-        for (let j: number = 0; i < 5; i++) {
-            let charBox: Element = wordContainer[j];
-            charBox.textContent = " ";
-        }
-    }
-
-}
-
 function typeLetter(event: KeyboardEvent): void {
     let ascii_key: number = event.keyCode;
     let char: string = String.fromCharCode(ascii_key);
     let wordContainer: Element | undefined = wordContainers[currentGuess];
     let currentCharBox: Element | undefined = wordContainer.children[currentChar];
 
-    // Hvis vi trykker backspace
+    // Hvis vi trykker backspace saa sletter vi bogstaveti boksen, hvis boksen er tom, gaar vi lige en boks tilbage for at slette.
     if (ascii_key == 8) {
         console.log("Backspace!");
 
@@ -60,7 +48,6 @@ function typeLetter(event: KeyboardEvent): void {
                 currentCharBox = wordContainer.children[currentChar];
             }
 
-
             currentCharBox.textContent = "";
 
             if (currentChar > 0) {
@@ -70,30 +57,31 @@ function typeLetter(event: KeyboardEvent): void {
             console.log("Current char num: " + currentChar);
         }
 
-        // Hvis vi trykker enter
+        // Hvis vi trykker enter, og hele ordet er fyldt ud, gaetter vi
     } else if (ascii_key == 13) {
+
         console.log('Enter!');
+
         if (currentChar == 5) {
             guessWord();
         }
+
         else {
             console.log('Gotta type all 4 letters to guess a word!')
         }
 
-        // Hvis det er et lowercase bogstav og vi ikke er paa sidste bogstav maa vi godt skrive
+        // Hvis det er et bogstav og vi ikke er paa sidste bogstav maa vi godt skrive
     } else if (isLetter(char) && currentChar <= 5) {
         console.log('Registered keypress: ' + char);
 
         if (wordContainer != undefined && currentCharBox != undefined) {
 
             if (currentCharBox.textContent != "" && currentChar >= 0 && currentChar <= 4) {
-                console.log('Typed in new box, since there was a char here')
                 currentChar++;
                 currentCharBox = wordContainer.children[currentChar];
                 currentCharBox.textContent = char;
 
             } else if (currentCharBox.textContent == "" && currentChar >= 0 && currentChar <= 4) {
-                console.log('Typed in box because it was empty')
                 currentCharBox.textContent = char;
                 currentChar++;
             }
@@ -114,6 +102,9 @@ function checkWord(word: Array<string>) {
 
 function guessWord() {
     console.log('Guessed a word!');
+    for (let i: number = 0; i < 5; i++) {
+
+    }
     currentGuess++;
     currentChar = 0;
 }
