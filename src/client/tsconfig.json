@@ -1,0 +1,16 @@
+{
+ // Visit https://aka.ms/tsconfig to read more about this file
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // File Layout
+    "rootDir": "./",
+    "outDir": "../../dist/client/",
+
+    // Environment Settings
+    // See also https://aka.ms/tsconfig/module
+    "module": "ES2015",
+    "types": [],
+
+    "jsx": "react-jsx",
+  }
+}

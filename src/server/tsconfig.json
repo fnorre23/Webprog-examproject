@@ -1,0 +1,17 @@
+{
+  // Visit https://aka.ms/tsconfig to read more about this file
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // File Layout
+    "rootDir": "./",
+    "outDir": "../../dist/server/",
+
+    // Environment Settings
+    // See also https://aka.ms/tsconfig/module
+    "module": "nodenext",
+    // For nodejs:
+    "lib": ["esnext"],
+    "types": ["node"],
+    // and npm install -D @types/node
+  }
+}
