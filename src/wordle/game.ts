@@ -1,5 +1,3 @@
-console.log('Here we go wordlin\''!)
-
 document.addEventListener("DOMContentLoaded", loadPage);
 
 type KeyboardLetter = {
@@ -22,18 +20,20 @@ function loadPage() {
     document.addEventListener('keydown', typeLetter);
 }
 
-let wordContainers: HTMLCollection = document.getElementsByClassName("wordContainer");
+const enum keys { BACKSPACE = 8, ENTER = 13, }
+
+const wordContainers: HTMLCollection = document.getElementsByClassName("wordContainer");
 let currentChar: number = 0;
 let currentGuess: number = 0;
 
 function typeLetter(event: KeyboardEvent): void {
-    let ascii_key: number = event.keyCode;
-    let char: string = String.fromCharCode(ascii_key);
-    let wordContainer: Element | undefined = wordContainers[currentGuess];
+    const ascii_key: number = event.keyCode;
+    const char: string = String.fromCharCode(ascii_key);
+    const wordContainer: Element | undefined = wordContainers[currentGuess];
     let currentCharBox: Element | undefined = wordContainer.children[currentChar];
 
     // Hvis vi trykker backspace saa sletter vi bogstaveti boksen, hvis boksen er tom, gaar vi lige en boks tilbage for at slette.
-    if (ascii_key == 8) {
+    if (ascii_key == keys.BACKSPACE) {
         console.log("Backspace!");
 
         if (currentChar == 5) {
@@ -58,7 +58,7 @@ function typeLetter(event: KeyboardEvent): void {
         }
 
         // Hvis vi trykker enter, og hele ordet er fyldt ud, gaetter vi
-    } else if (ascii_key == 13) {
+    } else if (ascii_key == keys.ENTER) {
 
         console.log('Enter!');
 
@@ -102,9 +102,6 @@ function checkWord(word: Array<string>) {
 
 function guessWord() {
     console.log('Guessed a word!');
-    for (let i: number = 0; i < 5; i++) {
-
-    }
     currentGuess++;
     currentChar = 0;
 }
