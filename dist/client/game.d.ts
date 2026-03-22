@@ -13,6 +13,7 @@ type Word = {
     isCorrect: boolean;
 };
 declare function loadPage(): void;
+declare function updateVariables(): void;
 declare const enum keys {
     BACKSPACE = 8,
     ENTER = 13
@@ -20,8 +21,11 @@ declare const enum keys {
 declare const wordContainers: HTMLCollection;
 declare let currentChar: number;
 declare let currentGuess: number;
+declare let wordContainer: any;
+declare let currentCharBox: any;
 declare function typeLetter(event: KeyboardEvent): void;
-declare function checkWord(word: Array<string>): void;
 declare function guessWord(): void;
+declare function deleteLetter(): void;
+declare function putLetter(char: string): void;
 declare function isLetter(str: string): boolean;
 //# sourceMappingURL=game.d.ts.map

@@ -19,6 +19,12 @@ type Word = {
 
 function loadPage() {
     document.addEventListener('keydown', typeLetter);
+    document.addEventListener('click', updateVariables); // Hver gang der klikkes dobbelttjekker vi at bokse er opdateret korrekt, saa man ogsaa kan bruge skaerm tastaturet
+}
+
+function updateVariables(): void {
+    wordContainer = wordContainers[currentGuess];
+    currentCharBox = wordContainer.children[currentChar];
 }
 
 const enum keys { BACKSPACE = 8, ENTER = 13, }
@@ -26,85 +32,116 @@ const enum keys { BACKSPACE = 8, ENTER = 13, }
 const wordContainers: HTMLCollection = document.getElementsByClassName("wordContainer");
 let currentChar: number = 0;
 let currentGuess: number = 0;
+let wordContainer: any = wordContainers[currentGuess];
+let currentCharBox: any = wordContainer.children[currentChar];
 
 function typeLetter(event: KeyboardEvent): void {
     const ascii_key: number = event.keyCode;
     const char: string = String.fromCharCode(ascii_key);
-    const wordContainer: any = wordContainers[currentGuess];
-    let currentCharBox: any = wordContainer.children[currentChar];
 
-    // Hvis vi trykker backspace saa sletter vi bogstaveti boksen, hvis boksen er tom, gaar vi lige en boks tilbage for at slette.
     if (ascii_key == keys.BACKSPACE) {
         console.log("Backspace!");
+        deleteLetter();
 
-        if (currentChar == 5) {
-            currentChar--;
-            currentCharBox = wordContainer.children[currentChar];
-        }
-
-        if (wordContainer != undefined && currentCharBox != undefined) {
-
-            if (currentCharBox.textContent == "" && currentChar > 0) {
-                currentChar--;
-                currentCharBox = wordContainer.children[currentChar];
-            }
-
-            currentCharBox.textContent = "";
-
-            if (currentChar > 0) {
-                currentChar--;
-            }
-
-            console.log("Current char num: " + currentChar);
-        }
-
-        // Hvis vi trykker enter, og hele ordet er fyldt ud, gaetter vi
     } else if (ascii_key == keys.ENTER) {
-
         console.log('Enter!');
+        guessWord();
 
-        if (currentChar == 5) {
-            guessWord();
-        }
-
-        else {
-            console.log('Gotta type all 4 letters to guess a word!')
-        }
-
-        // Hvis det er et bogstav og vi ikke er paa sidste bogstav maa vi godt skrive
     } else if (isLetter(char) && currentChar <= 5) {
-        console.log('Registered keypress: ' + char);
-
-        if (wordContainer != undefined && currentCharBox != undefined) {
-
-            if (currentCharBox.textContent != "" && currentChar >= 0 && currentChar <= 4) {
-                currentChar++;
-                currentCharBox = wordContainer.children[currentChar];
-                currentCharBox.textContent = char;
-
-            } else if (currentCharBox.textContent == "" && currentChar >= 0 && currentChar <= 4) {
-                currentCharBox.textContent = char;
-                currentChar++;
-            }
-
-            console.log("Current char num: " + currentChar);
-        }
+        putLetter(char);
 
     } else {
         console.log('Invalid key');
     }
 }
 
-function checkWord(word: Array<string>) {
-    for (let i: number = 0; i < word.length; i++) {
 
+function guessWord(): void {
+
+    updateVariables();
+
+    if (currentChar != 5) {
+        console.log('Gotta type all 5 letters to guess a word!')
+        return;
+    }
+
+    let guess: string = "";
+
+    for (let i: number = 0; i < wordContainer.children.length; i++) {
+        guess = guess + wordContainer.children[i].textContent;
+    }
+
+    // for (word in valid_words) {
+    //     if (guess == word) {
+    //         // TODO: Send word til server for at gaette. guessWord() skal maaske vare async
+    //         console.log('Guessed word: ' + guess);
+    //
+    //         currentGuess++;
+    //         currentChar = 0;
+    //         return;
+    //     }
+    // }
+
+    // console.log('Not valid guess');
+
+    console.log('Guessed word: ' + guess);
+    currentGuess++;
+    currentChar = 0;
+}
+
+// Hvis vi trykker backspace saa sletter vi bogstavet boksen, hvis boksen er tom, gaar vi lige en boks tilbage for at slette.
+function deleteLetter(): void {
+
+    updateVariables();
+
+    console.log('deleting letter');
+
+    if (currentChar == 5) {
+        currentChar--;
+        currentCharBox = wordContainer.children[currentChar];
+    }
+
+    if (wordContainer != undefined && currentCharBox != undefined) {
+
+        console.log('current textcontent: ' + currentCharBox.textContent)
+
+        if (currentCharBox.textContent == "" && currentChar > 0) {
+            currentChar--;
+            currentCharBox = wordContainer.children[currentChar];
+        }
+
+        currentCharBox.textContent = "";
+
+        if (currentChar > 0) {
+            currentChar--;
+        }
+
+        console.log("Current char num: " + currentChar);
     }
 }
 
-function guessWord() {
-    console.log('Guessed a word!');
-    currentGuess++;
-    currentChar = 0;
+function putLetter(char: string): void {
+
+    updateVariables();
+
+    if (wordContainer != undefined && currentCharBox != undefined) {
+
+        if (currentCharBox.textContent != "" && currentChar >= 0 && currentChar <= 4) {
+            currentChar++;
+            currentCharBox = wordContainer.children[currentChar];
+            currentCharBox.textContent = char;
+
+        } else if (currentCharBox.textContent == "" && currentChar >= 0 && currentChar <= 4) {
+            currentCharBox.textContent = char;
+            currentChar++;
+        }
+
+        console.log("Current char num: " + currentChar);
+    }
+
+    else {
+        console.log('Can\'t type this');
+    }
 }
 
 // Source - https://stackoverflow.com/a/9862788
@@ -117,3 +154,4 @@ function isLetter(str: string): boolean {
         return false;
     }
 }
+
