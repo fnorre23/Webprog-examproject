@@ -32,19 +32,19 @@ async function getCorrectWord(): Promise<string> {
     return correctWord;
 }
 
+// Parser csv fil saa vi har valid words, og generer vi et correct ord fra vores word bank, om er alle ord der kan vaere de rigtige. 
 const validWords: string[] = await processWordsFile('./valid-words.csv');
 const correctWord: string = await getCorrectWord();
 console.log('The correct word for the round is: ' + correctWord);
 
-// Kun til CLI debugging 
+// Kun til CLI debugging
 const rl = readline.createInterface({ input, output });
 const answer: string = await rl.question('Guess a word: ');
 rl.close();
 
 // Hvis ord er i valid words, saa er det true. Dejlig nemt
-if (validWords.includes(answer)) {
+if (validWords.includes(answer))
     console.log('Word is valid');
-}
 
 if (answer === correctWord) {
     console.log('Word is correct!');
