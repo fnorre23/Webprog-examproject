@@ -1,0 +1,35 @@
+23/3 - Saetter CSV laesning op, og logik til at finde ud af om gaettet ord er korrekt
+Havde en kaempe debat med mig selv om hvordan fuck vi hentede alt vi skal bruge inden noget andet maatte ske, taget i betragtning at laese CSV filen er en async operation.
+
+Tanker imens jeg rodede rundt:
+/*
+ NOTE: 
+1.
+Problem: vi vil gerne undgaa at laese filen hver gang vi vil tjekke et ord, 
+men vi vil heller ikke have bruger kan gaette foer de er klar. 
+saa hvordan laeser vi den til at starte med, og garanterer den er klar foer vi kalder paa tjek word funktionen?
+maaske starten ikke behoever vaere async, da vi egentlig ikke vil starte foer det er gennemfoert lowkey
+
+2.
+Starten skal saa vaere async pga fucking parseren. saa loesningen, ifoelge lorte claude fordi jeg hader mig selv,
+er at lave en main function wrapper til at stoppe noget fra at ske foer den koerer. Men ved ikke helt om det loeser vores problemer. for nu og test ser det ud til at vaere okay.
+
+3.
+Der er et argument for at bare koere vores async paa opstart, og saa bare antage det virker. Vi kan ogsaa lave fallbacks, eller bare terminate programmet hvis ikke det virker. Det goer det lowkey i forvejen hvis filstien til csv filen ikke virker
+
+4.
+Okay, hvis vi bare kalder await ude for en funcion stopper den alt andet alligevel...
+ */
+
+Problemet er saa simpelt, som at bare kalde dem som global variables, saa venter resten med at virke alligevel indtil de er resolved. Saa ingen grund til at overkomplicere det 
+
+Der var ogsaa problemer ift opsaetning af tsconfig til servern, da vi gerne ville bruge csv-parse. 
+for await kan kun bruges fra es2020 og efter, saa der har vi aendret target og module. Vi brugte es2015 ift den typescript tutorial vi saa, og fordi det ogsaa gaelder aeldre browsere. 
+
+Og saa i package.json har sat indstilling type: module, for at vi kunne bruge meta.import.url til et eksempel som csv.parse bruger, men det bruger vi ikke engang alligevel, for da jeg ville have claude til at loese det gav den en nemmer ting at arbejde med. Her var eksemplet vi ville saette op https://csv.js.org/parse/examples/async_iterator/
+
+Til sidst i dag, saa er der aendret en config indstilling 
+    "noUncheckedIndexedAccess": false,
+Da det er stress at hver gang man indekser et array, skal det tjekkes. Det magter jeg ikke til det her projekt. Projektet er for lille til at vi behoever tage hoejde for det.
+
+TODO til naeste gang, kommunikation mellem server og frontend. Derefter skal vi proeve at bruge types til at kommunikere om bogstaver er korrekt eller ej

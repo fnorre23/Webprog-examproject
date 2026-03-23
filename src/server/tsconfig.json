@@ -14,5 +14,7 @@
     "lib": ["esnext"],
     "types": ["node"],
     // and npm install -D @types/node
+
+    "noUncheckedIndexedAccess": false,
   }
 }
