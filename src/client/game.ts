@@ -1,3 +1,4 @@
+
 console.log('Here we go!');
 document.addEventListener("DOMContentLoaded", loadPage);
 
@@ -18,7 +19,7 @@ type Word = {
 }
 
 function loadPage() {
-    document.addEventListener('keydown', typeLetter);
+    document.addEventListener('keydown', keydown);
 }
 
 function updateVariables(): void {
@@ -34,20 +35,20 @@ let currentGuess: number = 0;
 let wordContainer: any = wordContainers[currentGuess];
 let currentCharBox: any = wordContainer.children[currentChar];
 
-function typeLetter(event: KeyboardEvent): void {
-    const ascii_key: number = event.keyCode;
-    const char: string = String.fromCharCode(ascii_key);
+function keydown(event: KeyboardEvent): void {
+    const asciiKey: number = event.keyCode;
+    const char: string = String.fromCharCode(asciiKey);
 
-    if (ascii_key == keys.BACKSPACE) {
+    if (asciiKey == keys.BACKSPACE) {
         console.log("Backspace!");
         deleteLetter();
 
-    } else if (ascii_key == keys.ENTER) {
+    } else if (asciiKey == keys.ENTER) {
         console.log('Enter!');
         guessWord();
 
     } else if (isLetter(char) && currentChar <= 5) {
-        putLetter(char);
+        typeLetter(char);
 
     } else {
         console.log('Invalid key');
@@ -119,28 +120,23 @@ function deleteLetter(): void {
     }
 }
 
-function putLetter(char: string): void {
+function typeLetter(char: string): void {
 
     updateVariables();
 
-    if (wordContainer != undefined && currentCharBox != undefined) {
+    if (wordContainer != undefined && currentCharBox != undefined) { console.log('Cant type'); return; }
 
-        if (currentCharBox.textContent != "" && currentChar >= 0 && currentChar <= 4) {
-            currentChar++;
-            currentCharBox = wordContainer.children[currentChar];
-            currentCharBox.textContent = char;
+    if (currentCharBox.textContent != "" && currentChar >= 0 && currentChar <= 4) {
+        currentChar++;
+        currentCharBox = wordContainer.children[currentChar];
+        currentCharBox.textContent = char;
 
-        } else if (currentCharBox.textContent == "" && currentChar >= 0 && currentChar <= 4) {
-            currentCharBox.textContent = char;
-            currentChar++;
-        }
-
-        console.log("Current char num: " + currentChar);
+    } else if (currentCharBox.textContent == "" && currentChar >= 0 && currentChar <= 4) {
+        currentCharBox.textContent = char;
+        currentChar++;
     }
 
-    else {
-        console.log('Can\'t type this');
-    }
+    console.log("Current char num: " + currentChar);
 }
 
 // Source - https://stackoverflow.com/a/9862788
