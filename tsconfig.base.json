@@ -1,11 +1,16 @@
 {
+  //Compiler ting fra root
+  // "include": ["src/**/*"],
+  // "exclude": ["dist", "node_modules"],
+
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "es2020",
-    "target": "es2020",
+    "module": "es2022",
+    "target": "es2022",
+    //"moduleResolution": "nodenext",
 
     // Other Outputs
     "sourceMap": true,
@@ -34,8 +39,9 @@
     "moduleDetection": "auto",
     "skipLibCheck": true,
 
+
     //andre tingelinger
     "removeComments": true,
-    "noEmitOnError": true,
+    "noEmitOnError": true, "esModuleInterop": true, // noget der goer vi kan compile vores server "noUncheckedIndexedAccess": false, // ellers skal vi tjekke et output hver gang vi indexer et array 
   }
 }

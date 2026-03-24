@@ -33,3 +33,7 @@ Til sidst i dag, saa er der aendret en config indstilling
 Da det er stress at hver gang man indekser et array, skal det tjekkes. Det magter jeg ikke til det her projekt. Projektet er for lille til at vi behoever tage hoejde for det.
 
 TODO til naeste gang, kommunikation mellem server og frontend. Derefter skal vi proeve at bruge types til at kommunikere om bogstaver er korrekt eller ej
+
+DATABASE overvejelser
+Redis hvis ikke det er for svaert,
+Key: username, value: 

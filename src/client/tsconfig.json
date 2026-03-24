@@ -1,15 +1,24 @@
 {
  // Visit https://aka.ms/tsconfig to read more about this file
   "extends": "../../tsconfig.base.json",
+  "include": ["../shared/**/*", "../client/**/*"],
+  // "exclude": [],
   "compilerOptions": {
     // File Layout
-    "rootDir": "./",
-    "outDir": "../../dist/client/",
+    "rootDir": "../",
+    "outDir": "../../dist/",
+    // "outDir": "../../dist/",
+
+    // Declaration
+    "declaration": false,
+    "declarationMap": false,
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "es2020",
     "types": [],
+    "isolatedModules": true,
+    "moduleDetection": "auto",
 
     "jsx": "react-jsx",
   }

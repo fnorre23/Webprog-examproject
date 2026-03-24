@@ -9,6 +9,20 @@ import { parse } from 'csv-parse';
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
+// Server setup https://www.geeksforgeeks.org/node-js/how-to-create-a-simple-server-using-express-js/
+import express from "express";
+
+const app = express();
+const PORT = 3000;
+
+app.get('/', (req, res) => {
+    res.send('<h1>Hello, Geeks!</h1><p>This is your simple Express server.</p>');
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is listening at http://localhost:${PORT}`);
+});
+
 // Desvaerre faaet lidt hjaelp fra claude her, men bygger paa officiel dok
 // https://csv.js.org/parse/examples/async_iterator/
 async function processWordsFile(path: string): Promise<string[]> {
@@ -39,16 +53,31 @@ console.log('The correct word for the round is: ' + correctWord);
 
 // Kun til CLI debugging
 const rl = readline.createInterface({ input, output });
-const answer: string = await rl.question('Guess a word: ');
+const guess: string = await rl.question('Guess a word: ');
 rl.close();
 
-// Hvis ord er i valid words, saa er det true. Dejlig nemt
-if (validWords.includes(answer))
-    console.log('Word is valid');
+function checkWord(guess: string): boolean { // tilfoej Word return type
 
-if (answer === correctWord) {
-    console.log('Word is correct!');
-} else {
-    console.log('Word is not correct...');
+    // Kun fortsaet hvis det er et valid guess
+    if (!validWords.includes(guess)) {
+        console.log('Word is not valid');
+        return false;
+    }
+
+    if (guess === correctWord) {
+        console.log('Word is correct!');
+
+        // saet alle bogstaver korrekt og isCorrect true
+
+        return true;
+
+    } else {
+        console.log('Word is not correct...');
+        return false;
+    }
+
+    //logik til at tjekke bogstaver og return vores Word type
 }
+
+checkWord(guess);
 

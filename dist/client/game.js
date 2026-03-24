@@ -1,9 +1,13 @@
-"use strict";
 console.log('Here we go!');
 document.addEventListener("DOMContentLoaded", loadPage);
+const testLetter1 = {
+    char: 'q',
+    isInWord: false,
+    isCorrect: false,
+};
+console.log('Character ' + testLetter1.char + ' is inWord ' + testLetter1.isInWord + ' and is correct ' + testLetter1.isCorrect);
 function loadPage() {
-    document.addEventListener('keydown', typeLetter);
-    document.addEventListener('click', updateVariables);
+    document.addEventListener('keydown', keydown);
 }
 function updateVariables() {
     wordContainer = wordContainers[currentGuess];
@@ -19,19 +23,19 @@ let currentChar = 0;
 let currentGuess = 0;
 let wordContainer = wordContainers[currentGuess];
 let currentCharBox = wordContainer.children[currentChar];
-function typeLetter(event) {
-    const ascii_key = event.keyCode;
-    const char = String.fromCharCode(ascii_key);
-    if (ascii_key == keys.BACKSPACE) {
+function keydown(event) {
+    const asciiKey = event.keyCode;
+    const char = String.fromCharCode(asciiKey);
+    if (asciiKey == keys.BACKSPACE) {
         console.log("Backspace!");
         deleteLetter();
     }
-    else if (ascii_key == keys.ENTER) {
+    else if (asciiKey == keys.ENTER) {
         console.log('Enter!');
         guessWord();
     }
     else if (isLetter(char) && currentChar <= 5) {
-        putLetter(char);
+        typeLetter(char);
     }
     else {
         console.log('Invalid key');
@@ -71,23 +75,22 @@ function deleteLetter() {
         console.log("Current char num: " + currentChar);
     }
 }
-function putLetter(char) {
+function typeLetter(char) {
     updateVariables();
     if (wordContainer != undefined && currentCharBox != undefined) {
-        if (currentCharBox.textContent != "" && currentChar >= 0 && currentChar <= 4) {
-            currentChar++;
-            currentCharBox = wordContainer.children[currentChar];
-            currentCharBox.textContent = char;
-        }
-        else if (currentCharBox.textContent == "" && currentChar >= 0 && currentChar <= 4) {
-            currentCharBox.textContent = char;
-            currentChar++;
-        }
-        console.log("Current char num: " + currentChar);
+        console.log('Cant type');
+        return;
     }
-    else {
-        console.log('Can\'t type this');
+    if (currentCharBox.textContent != "" && currentChar >= 0 && currentChar <= 4) {
+        currentChar++;
+        currentCharBox = wordContainer.children[currentChar];
+        currentCharBox.textContent = char;
     }
+    else if (currentCharBox.textContent == "" && currentChar >= 0 && currentChar <= 4) {
+        currentCharBox.textContent = char;
+        currentChar++;
+    }
+    console.log("Current char num: " + currentChar);
 }
 function isLetter(str) {
     if (str.length === 1 && str.match(/[a-z]/i)) {
@@ -97,4 +100,5 @@ function isLetter(str) {
         return false;
     }
 }
+export {};
 //# sourceMappingURL=game.js.map

@@ -2,6 +2,15 @@
 console.log('Here we go!');
 document.addEventListener("DOMContentLoaded", loadPage);
 
+import type { KeyboardLetter } from "../shared/types.ts";
+
+const testLetter1: KeyboardLetter = {
+    char: 'q',
+    isInWord: false,
+    isCorrect: false,
+}
+
+console.log('Character ' + testLetter1.char + ' is inWord ' + testLetter1.isInWord + ' and is correct ' + testLetter1.isCorrect)
 
 function loadPage() {
     document.addEventListener('keydown', keydown);

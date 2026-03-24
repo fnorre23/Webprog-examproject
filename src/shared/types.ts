@@ -1,11 +1,11 @@
 
-type KeyboardLetter = {
+export type KeyboardLetter = {
     char: string,
     isInWord: boolean,
     isCorrect: boolean
 }
 
-type Word = {
+export type Word = {
     letter1: KeyboardLetter,
     letter2: KeyboardLetter,
     letter3: KeyboardLetter,
