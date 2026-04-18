@@ -2,16 +2,33 @@
 // TODO: send answers back 
 
 /* csv shit https://csv.js.org/parse/examples/async_iterator/ */
-
 import { createReadStream } from 'node:fs';
 import { parse } from 'csv-parse';
-// Import til at skrive via cli for debugging
-import * as readline from 'node:readline/promises';
-import { stdin as input, stdout as output } from 'node:process';
 
 // Server setup https://www.geeksforgeeks.org/node-js/how-to-create-a-simple-server-using-express-js/
 import express from "express";
 
+// Import til at skrive via cli for debugging
+import * as readline from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
+
+
+type Letter = {
+    isInWord: boolean,
+    isInCorrectPos: boolean,
+
+}
+
+type Word = {
+    letter1: string,
+    letter2: string,
+    letter3: string,
+    letter4: string,
+    letter5: string,
+}
+
+
+// Server setup
 const app = express();
 const PORT = 3000;
 
@@ -23,9 +40,9 @@ app.listen(PORT, () => {
     console.log(`Server is listening at http://localhost:${PORT}`);
 });
 
-// Desvaerre faaet lidt hjaelp fra claude her, men bygger paa officiel dok
+// Desvaerre faaet lidt hjaelp fra claude her, men bygger paa officiel docs
 // https://csv.js.org/parse/examples/async_iterator/
-async function processWordsFile(path: string): Promise<string[]> {
+async function processWordsFile(path: string) {
 
     let words: string[] = [];
     const parser = createReadStream(path).pipe(
@@ -39,7 +56,7 @@ async function processWordsFile(path: string): Promise<string[]> {
     return words;
 }
 
-async function getCorrectWord(): Promise<string> {
+async function getCorrectWord() {
     const words: string[] | undefined = await processWordsFile('./word-bank.csv');
     const correctWord: string = words[Math.floor(Math.random() * words.length)]; // random ord
     if (!correctWord) throw new Error("No words available");
@@ -56,9 +73,9 @@ const rl = readline.createInterface({ input, output });
 const guess: string = await rl.question('Guess a word: ');
 rl.close();
 
-function checkWord(guess: string): boolean { // tilfoej Word return type
+// Tjekker om gaet er korrekt. Hvis ikke, tjekker hvert bogstav
+function checkWord(guess: string) {
 
-    // Kun fortsaet hvis det er et valid guess
     if (!validWords.includes(guess)) {
         console.log('Word is not valid');
         return false;
@@ -70,14 +87,24 @@ function checkWord(guess: string): boolean { // tilfoej Word return type
         // saet alle bogstaver korrekt og isCorrect true
 
         return true;
-
-    } else {
-        console.log('Word is not correct...');
-        return false;
     }
 
+    console.log('Word is not correct...');
+
+
+    return true;
     //logik til at tjekke bogstaver og return vores Word type
 }
 
-checkWord(guess);
+function checkLetters(guess: string) {
+    for (let i = 0; i < guess.length; i++) {
+        const letter = guess[i];
 
+        if (correctWord.includes(letter)) {
+
+        }
+
+    }
+}
+
+checkWord(guess);

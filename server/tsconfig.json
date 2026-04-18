@@ -1,16 +1,21 @@
 {
-  //Compiler ting fra root
-  // "include": ["src/**/*"],
-  // "exclude": ["dist", "node_modules"],
-
   // Visit https://aka.ms/tsconfig to read more about this file
+  "include": ["./src/*"],
   "compilerOptions": {
+
+    // File Layout
+    "rootDir": "./",
+    "outDir": "../../dist/server/",
+    "target": "es2022",
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "es2022",
-    "target": "es2022",
-    //"moduleResolution": "nodenext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+
+    // For nodejs:
+    "lib": ["esnext"],
+    "types": ["node"],
 
     // Other Outputs
     "sourceMap": true,
@@ -39,9 +44,11 @@
     "moduleDetection": "auto",
     "skipLibCheck": true,
 
-
     //andre tingelinger
     "removeComments": true,
-    "noEmitOnError": true, "esModuleInterop": true, // noget der goer vi kan compile vores server "noUncheckedIndexedAccess": false, // ellers skal vi tjekke et output hver gang vi indexer et array 
+    "noEmitOnError": true, 
+    "esModuleInterop": true, // noget der goer vi kan compile vores server 
+    "noUncheckedIndexedAccess": false, // ellers skal vi tjekke et output hver gang vi indexer et array 
+
   }
 }
