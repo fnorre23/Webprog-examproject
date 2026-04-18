@@ -11,22 +11,7 @@ import express from "express";
 // Import til at skrive via cli for debugging
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-
-
-type Letter = {
-    isInWord: boolean,
-    isInCorrectPos: boolean,
-
-}
-
-type Word = {
-    letter1: string,
-    letter2: string,
-    letter3: string,
-    letter4: string,
-    letter5: string,
-}
-
+import fs from 'fs';
 
 // Server setup
 const app = express();
@@ -36,9 +21,15 @@ app.get('/', (req, res) => {
     res.send('<h1>Hello, Geeks!</h1><p>This is your simple Express server.</p>');
 });
 
+app.post('/', (req, res) => {
+    let jsonResponse = checkGuess(req);
+    res.send(jsonResponse);
+})
+
 app.listen(PORT, () => {
     console.log(`Server is listening at http://localhost:${PORT}`);
 });
+
 
 // Desvaerre faaet lidt hjaelp fra claude her, men bygger paa officiel docs
 // https://csv.js.org/parse/examples/async_iterator/
@@ -68,43 +59,99 @@ const validWords: string[] = await processWordsFile('./valid-words.csv');
 const correctWord: string = await getCorrectWord();
 console.log('The correct word for the round is: ' + correctWord);
 
-// Kun til CLI debugging
+/**
+ * Checks guess.
+* First declares JSONobject.
+* If the word is not valid according to wordbank, it returns the guess with is_valid = false
+* If word is equal to correctWord, it simply returns everything true
+* Else it checks each letter against the letters in the correctword, and returns a matching JSON response 
+ * */
+function checkGuess(guess: any) {
+
+    let jsonResponse = {
+        guess: guess,
+        was_correct: false,
+        is_valid: true,
+        character_info: [
+            {
+                char: guess[0],
+                in_word: false,
+                correct_idx: false,
+            },
+            {
+                char: guess[1],
+                in_word: false,
+                correct_idx: false,
+            },
+            {
+                char: guess[2],
+                in_word: false,
+                correct_idx: false,
+            },
+            {
+                char: guess[3],
+                in_word: false,
+                correct_idx: false,
+            },
+            {
+                char: guess[4],
+                in_word: false,
+                correct_idx: false,
+            },
+        ]
+    }
+
+    if (!validWords.includes(guess)) {
+        console.log('Word is not valid');
+
+        jsonResponse.is_valid = false;
+
+        return JSON.stringify(jsonResponse);
+    }
+
+    // Hvis ord er korrekt goer vi bare alt true
+    if (guess === correctWord) {
+        for (let i = 0; i < guess.length; i++) {
+            jsonResponse.was_correct = true;
+            jsonResponse.character_info[i].in_word = true;
+            jsonResponse.character_info[i].correct_idx = true;
+        }
+
+        return JSON.stringify(jsonResponse);
+    }
+
+    // Checking all letters against the correct word
+    for (let i = 0; i < guess.length; i++) {
+        const letter = guess[i];
+
+        if (letter == correctWord[i]) {
+
+            jsonResponse.character_info[i].in_word = true;
+            jsonResponse.character_info[i].correct_idx = true;
+
+            continue;
+        }
+
+        if (correctWord.includes(letter)) {
+            jsonResponse.character_info[i].in_word = true;
+            continue;
+        }
+
+    }
+    return JSON.stringify(jsonResponse);
+}
+
+/* DEBUGGING IN THE CLI */
 const rl = readline.createInterface({ input, output });
 const guess: string = await rl.question('Guess a word: ');
 rl.close();
 
-// Tjekker om gaet er korrekt. Hvis ikke, tjekker hvert bogstav
-function checkWord(guess: string) {
+let api_response = checkGuess(guess);
 
-    if (!validWords.includes(guess)) {
-        console.log('Word is not valid');
-        return false;
+fs.writeFile('guess.json', api_response, (err) => {
+    if (err) {
+        console.log('Error writing file:', err);
+    } else {
+        console.log('Successfully wrote file');
     }
-
-    if (guess === correctWord) {
-        console.log('Word is correct!');
-
-        // saet alle bogstaver korrekt og isCorrect true
-
-        return true;
-    }
-
-    console.log('Word is not correct...');
-
-
-    return true;
-    //logik til at tjekke bogstaver og return vores Word type
-}
-
-function checkLetters(guess: string) {
-    for (let i = 0; i < guess.length; i++) {
-        const letter = guess[i];
-
-        if (correctWord.includes(letter)) {
-
-        }
-
-    }
-}
-
-checkWord(guess);
+});
