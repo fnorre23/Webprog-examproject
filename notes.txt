@@ -1,3 +1,39 @@
+JSON OBJECT MELLEM FRONTEND OG BACKEND
+{
+	"guess": "beans",
+	"was_correct": false,
+	"character_info": [
+		{
+			"char": "e",
+            "in_word": false,
+            "correct_idx": false
+		},
+		{
+			"char": "e",
+            "in_word": false,
+            "correct_idx": false
+		},
+		{
+			"char": "e",
+            "in_word": false,
+            "correct_idx": false
+		},
+		{
+			"char": "e",
+            "in_word": false,
+            "correct_idx": false
+		},
+		{
+			"char": "e",
+            "in_word": false,
+            "correct_idx": false
+		}
+	]
+}
+
+
+
+
 23/3 - Saetter CSV laesning op, og logik til at finde ud af om gaettet ord er korrekt
 Havde en kaempe debat med mig selv om hvordan fuck vi hentede alt vi skal bruge inden noget andet maatte ske, taget i betragtning at laese CSV filen er en async operation.
 
