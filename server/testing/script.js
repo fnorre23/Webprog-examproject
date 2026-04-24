@@ -7,6 +7,9 @@ async function fetchTester(guess) {
         const response = await
             fetch(url, {
                 method: "POST",
+                headers: {
+                    "Content-type": "text/plain",
+                },
                 body: guess,
             },);
 
