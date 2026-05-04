@@ -1,6 +1,8 @@
 console.log('Hello, World!');
 
-const url = 'http://localhost:3000'
+const url = 'http://localhost:8080'
+
+const socket = io(url)
 
 async function fetchTester(guess) {
     try {

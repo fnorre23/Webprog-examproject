@@ -39,7 +39,6 @@ console.log('The correct word for the round is: ' + correctWord);
  * */
 export function checkGuess(guess: any) {
 
-
     let jsonResponse = {
         guess: guess,
         was_correct: false,
@@ -111,7 +110,7 @@ export function checkGuess(guess: any) {
 
     }
 
-    console.log(JSON.stringify(jsonResponse));
+    // console.log(JSON.stringify(jsonResponse));
 
     return JSON.stringify(jsonResponse);
 }
