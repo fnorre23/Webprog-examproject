@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'playingScreen.dart';
+
+
 void main() {
   runApp(const MainApp());
 }
@@ -34,13 +37,13 @@ class _MainAppState extends State<MainApp> {
         body = LobbyScreen(onPlayerStateChange: _setPlayerState);
         break;
       case PlayerState.playing:
-        body = const Text('Playing Screen');
+        body = GamePage();
         break;
       case PlayerState.spectating:
         body = const Text('Spectating Screen');
         break;
     }
-// Hvis bare appbar og body igennem alle states
+// Viser bare appbar og body igennem alle states
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: const Text('Wordle Battle Royale')),

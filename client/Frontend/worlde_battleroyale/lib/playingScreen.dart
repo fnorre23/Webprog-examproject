@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+// Skal i back-end
+enum HitType { hit, partial, miss }
+
+// Alt det her er fra FLutter Tutorial https://docs.flutter.dev/learn/pathway/tutorial
 
 class Tile extends StatelessWidget {
   const Tile(this.letter, this.hitType, {super.key});
