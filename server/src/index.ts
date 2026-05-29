@@ -1,110 +1,112 @@
-// TODO: receive guesses and parse
 // TODO: send answers back 
 
 /* csv shit https://csv.js.org/parse/examples/async_iterator/ */
-import { createReadStream } from 'node:fs';
-import { parse } from 'csv-parse';
+import { checkGuess } from './modules/wordle.ts';
+import { Server } from 'socket.io';
+import http from 'http';
 
 // Server setup https://www.geeksforgeeks.org/node-js/how-to-create-a-simple-server-using-express-js/
 import express from "express";
 
-// Import til at skrive via cli for debugging
-import * as readline from 'node:readline/promises';
-import { stdin as input, stdout as output } from 'node:process';
-
-
-type Letter = {
-    isInWord: boolean,
-    isInCorrectPos: boolean,
-
-}
-
-type Word = {
-    letter1: string,
-    letter2: string,
-    letter3: string,
-    letter4: string,
-    letter5: string,
-}
-
-
 // Server setup
 const app = express();
-const PORT = 3000;
+const PORT: number = 8080;
 
+const server = http.createServer(app);
+
+// IO haandterer websockets, og derfinerer derfor selv CORS shit
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: [
+            'GET',
+            'POST',
+            // 'PUT',
+            // 'DELETE',
+        ],
+        allowedHeaders: [
+            'Origin',
+            'X-Requested-With',
+            'Content-Type',
+            'Accept',
+        ]
+    }
+});
+
+// Parse requests
+app.use(express.text());
+
+// CORS related fra Express til almene HTTP methods
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With,Content-Type, Accept');
+    next();
+});
+
+// testing requests
 app.get('/', (req, res) => {
     res.send('<h1>Hello, Geeks!</h1><p>This is your simple Express server.</p>');
 });
 
-app.listen(PORT, () => {
+app.post('/', (req, res) => {
+    let jsonResponse = checkGuess(req.body);
+    res.send(jsonResponse);
+})
+
+server.listen(PORT, () => {
     console.log(`Server is listening at http://localhost:${PORT}`);
 });
 
-// Desvaerre faaet lidt hjaelp fra claude her, men bygger paa officiel docs
-// https://csv.js.org/parse/examples/async_iterator/
-async function processWordsFile(path: string) {
+checkGuess('beans');
 
-    let words: string[] = [];
-    const parser = createReadStream(path).pipe(
-        parse({ columns: false, trim: true, })
-    );
 
-    // Da parseren returner arrays af string, tager vi bare indholdet aka [0], da vi ved der kun er 1 string per linje
-    for await (const word of parser) {
-        words.push(word[0]);
-    }
-    return words;
+
+// Enum alternative
+const Phase = {
+    LOBBY: 'lobby',
+    PLAYING: 'playing',
+    SPECTATING: 'spectating',
+    RESULTS: 'results',
+} as const;
+
+type Phase = (typeof Phase)[keyof typeof Phase];
+
+let phase: Phase = 'lobby';
+
+interface State {
+    phase: Phase,
+    players: object,
+    timer: ReturnType<typeof setTimeout> | null,
 }
 
-async function getCorrectWord() {
-    const words: string[] | undefined = await processWordsFile('./word-bank.csv');
-    const correctWord: string = words[Math.floor(Math.random() * words.length)]; // random ord
-    if (!correctWord) throw new Error("No words available");
-    return correctWord;
+const state: State = {
+    phase: phase,
+    players: {},                // { socketId: { name, reactionTime, ready } }
+    timer: null,                // reference to the countdown setTimeout
 }
 
-// Parser csv fil saa vi har valid words, og generer vi et correct ord fra vores word bank, om er alle ord der kan vaere de rigtige. 
-const validWords: string[] = await processWordsFile('./valid-words.csv');
-const correctWord: string = await getCorrectWord();
-console.log('The correct word for the round is: ' + correctWord);
-
-// Kun til CLI debugging
-const rl = readline.createInterface({ input, output });
-const guess: string = await rl.question('Guess a word: ');
-rl.close();
-
-// Tjekker om gaet er korrekt. Hvis ikke, tjekker hvert bogstav
-function checkWord(guess: string) {
-
-    if (!validWords.includes(guess)) {
-        console.log('Word is not valid');
-        return false;
-    }
-
-    if (guess === correctWord) {
-        console.log('Word is correct!');
-
-        // saet alle bogstaver korrekt og isCorrect true
-
-        return true;
-    }
-
-    console.log('Word is not correct...');
+io.on('connection', (socket) => {
+    console.log('Socket ID just joined: ' + socket.id);
+})
 
 
-    return true;
-    //logik til at tjekke bogstaver og return vores Word type
-}
+// Import til at skrive via cli for debugging
+// import * as readline from 'node:readline/promises';
+// import { stdin as input, stdout as output } from 'node:process';
+// import fs from 'fs';
 
-function checkLetters(guess: string) {
-    for (let i = 0; i < guess.length; i++) {
-        const letter = guess[i];
-
-        if (correctWord.includes(letter)) {
-
-        }
-
-    }
-}
-
-checkWord(guess);
+/* DEBUGGING IN THE CLI */
+// const rl = readline.createInterface({ input, output });
+// const guess: string = await rl.question('Guess a word: ');
+// rl.close();
+//
+// let api_response = checkGuess(guess);
+//
+// fs.writeFile('guess.json', api_response, (err) => {
+//     if (err) {
+//         console.log('Error writing file:', err);
+//     } else {
+//         console.log('Successfully wrote file');
+//     }
+// });
