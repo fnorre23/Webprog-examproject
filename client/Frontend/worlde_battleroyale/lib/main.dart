@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'playingScreen.dart';
+
+import 'playing_screen.dart';
+import 'lobby_screen.dart';
 
 
 void main() {
@@ -53,20 +55,3 @@ class _MainAppState extends State<MainApp> {
   }
 }
 
-class LobbyScreen extends StatelessWidget {
-  final void Function(PlayerState) onPlayerStateChange;
-
-  const LobbyScreen({super.key, required this.onPlayerStateChange});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      const Text ('Lobby', style: TextStyle(fontSize: 28)),
-      const SizedBox(height:12),
-      ElevatedButton(
-        onPressed: () => onPlayerStateChange(PlayerState.playing),
-        child: const Text('Start Game'),
-      )
-    ]);
-  }
-}

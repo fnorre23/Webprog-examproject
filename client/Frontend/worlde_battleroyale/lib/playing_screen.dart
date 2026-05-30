@@ -34,13 +34,13 @@ class Game {
 
   Game({this.onUpdate}) {
     socket.connect();
-    socket.on('response', (data) {
-      print ('Recived response: $data');});
+    socket.on('guess_validation', (data) {
+      print ('Recived guess validation: $data');});
   }
 
   void guess(String guess) {
     socket.emit('guess', guess);
-    print('Guess sent: $guess');
+      print('Guess sent: $guess');
   }
 }
 
@@ -66,7 +66,6 @@ class Tile extends StatelessWidget {
           HitType.hit => Colors.green,
           HitType.partial => Colors.yellow,
           HitType.miss => Colors.grey,
-          _ => Colors.white,
         },
       ),
       child: Center(
@@ -95,49 +94,6 @@ class _GamePageState extends State<GamePage> {
     _game = Game(onUpdate: () => setState(() {}));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          for (var guess in _game.guesses)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var letter in guess)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.5),
-                    child: Tile(letter.char, letter.type),
-                  )
-              ],
-            ),
-          GuessInput(
-           onSubmitGuess: (String guess) {
-                _game.guess(guess);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class GuessInput extends StatelessWidget {
-  GuessInput({super.key, required this.onSubmitGuess});
-
-  final void Function(String) onSubmitGuess;
-
-  final TextEditingController _textEditingController = TextEditingController();
-
-  final FocusNode _focusNode = FocusNode();
-
-  void _onSubmit() {
-    onSubmitGuess(_textEditingController.text);
-    _textEditingController.clear();
-    _focusNode.requestFocus();
-  }
-
 @override
 Widget build(BuildContext context) {
   const int maxRows = 6;
@@ -162,9 +118,10 @@ Widget build(BuildContext context) {
             children: [
               for (var letter in guess)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.5),
                   child: Tile(letter.char, letter.type),
-                ),
+                )
             ],
           ),
         GuessInput(
@@ -175,4 +132,66 @@ Widget build(BuildContext context) {
       ],
     ),
   );
+}
+}
+
+
+class GuessInput extends StatefulWidget {
+  final void Function(String) onSubmitGuess;
+
+  const GuessInput({super.key, required this.onSubmitGuess});
+
+  @override
+  State<GuessInput> createState() => _GuessInputState();
+}
+
+class _GuessInputState extends State<GuessInput> {
+  final TextEditingController _textEditingController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _textEditingController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final guess = _textEditingController.text.trim();
+    if (guess.length != 5) return;
+
+    widget.onSubmitGuess(guess);
+    _textEditingController.clear();
+    _focusNode.requestFocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _textEditingController,
+              focusNode: _focusNode,
+              maxLength: 5,
+              decoration: const InputDecoration(
+                hintText: 'Enter a 5-letter guess',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(35)),
+                ),
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+          ),
+          IconButton(
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.arrow_circle_up),
+            onPressed: _submit,
+          ),
+        ],
+      ),
+    );
+  }
 }
