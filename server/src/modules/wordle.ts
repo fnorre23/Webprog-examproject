@@ -1,6 +1,7 @@
 /* csv shit https://csv.js.org/parse/examples/async_iterator/ */
 import { createReadStream } from 'node:fs';
 import { parse } from 'csv-parse';
+import type { Guess } from './types.ts';
 
 // Desvaerre faaet lidt hjaelp fra claude her, men bygger paa officiel docs
 // https://csv.js.org/parse/examples/async_iterator/
@@ -18,16 +19,22 @@ async function processWordsFile(path: string) {
     return words;
 }
 
+// Saetter et nyt correct word. burde merges med setNewCorrectWord
 async function getCorrectWord() {
-    const words: string[] | undefined = await processWordsFile('./word-bank.csv');
+    const words: string[] | undefined = await processWordsFile('./word-banks/word-bank.csv');
     const correctWord: string = words[Math.floor(Math.random() * words.length)]; // random ord
     if (!correctWord) throw new Error("No words available");
     return correctWord;
 }
 
+// En setter function basically
+export async function setNewCorrectWord() {
+    correctWord = await getCorrectWord();
+};
+
 // Parser csv fil saa vi har valid words, og generer vi et correct ord fra vores word bank, om er alle ord der kan vaere de rigtige. 
-const validWords: string[] = await processWordsFile('./valid-words.csv');
-const correctWord: string = await getCorrectWord();
+const validWords: string[] = await processWordsFile('./word-banks/valid-words.csv');
+export let correctWord: string = await getCorrectWord();
 console.log('The correct word for the round is: ' + correctWord);
 
 /**
@@ -39,33 +46,34 @@ console.log('The correct word for the round is: ' + correctWord);
  * */
 export function checkGuess(guess: any) {
 
-    let jsonResponse = {
+    let word_is_correct = false;
+    let jsonResponse: Guess = {
         guess: guess,
         was_correct: false,
         is_valid: true,
         character_info: [
             {
-                char: guess[0],
+                char1: guess[0],
                 in_word: false,
                 correct_idx: false,
             },
             {
-                char: guess[1],
+                char2: guess[1],
                 in_word: false,
                 correct_idx: false,
             },
             {
-                char: guess[2],
+                char3: guess[2],
                 in_word: false,
                 correct_idx: false,
             },
             {
-                char: guess[3],
+                char4: guess[3],
                 in_word: false,
                 correct_idx: false,
             },
             {
-                char: guess[4],
+                char5: guess[4],
                 in_word: false,
                 correct_idx: false,
             },
@@ -88,7 +96,9 @@ export function checkGuess(guess: any) {
             jsonResponse.character_info[i].correct_idx = true;
         }
 
-        return JSON.stringify(jsonResponse);
+        word_is_correct = true;
+
+        return [JSON.stringify(jsonResponse), word_is_correct];
     }
 
     // Checking all letters against the correct word
@@ -112,5 +122,5 @@ export function checkGuess(guess: any) {
 
     // console.log(JSON.stringify(jsonResponse));
 
-    return JSON.stringify(jsonResponse);
+    return [jsonResponse, word_is_correct];
 }

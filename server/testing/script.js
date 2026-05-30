@@ -3,30 +3,3 @@ console.log('Hello, World!');
 const url = 'http://localhost:8080'
 
 const socket = io(url)
-
-async function fetchTester(guess) {
-    try {
-        const response = await
-            fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-type": "text/plain",
-                },
-                body: guess,
-            },);
-
-        if (!response.ok) {
-            throw new Error(`Response status: ${response.status}`);
-        }
-
-        const jsonResponse = await response.json();
-
-        console.log(jsonResponse);
-
-    } catch (e) {
-        console.log('Something went wrong: ');
-        console.error(e);
-    }
-}
-
-fetchTester('beans');
