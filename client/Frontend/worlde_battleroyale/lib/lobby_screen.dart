@@ -18,7 +18,6 @@ class PlayerProcess {
 }
 
 
-
 class LobbyScreen extends StatefulWidget {
   final void Function(PlayerState) onPlayerStateChange;
 
@@ -33,6 +32,7 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final PlayerProcess _playerProcess = PlayerProcess();
+  bool _isReady = false;
 
 
   @override
@@ -57,6 +57,8 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
     if (playerName.isEmpty) return;
     _playerProcess.playerName(playerName);
   }
+
+// Her er alt der har med pop-up navgivning af spilleren.
 
   Future<void> _showDialogIfFirstLoaded() async {
     final prefs = await SharedPreferences.getInstance();
@@ -98,15 +100,40 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
     }
   }
 
+  // Det her er den faktiske lobby screen
+
   @override
   Widget build(BuildContext context) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       const Text ('Lobby', style: TextStyle(fontSize: 28)),
       const SizedBox(height:12),
-      ElevatedButton(
-        onPressed: () => widget.onPlayerStateChange(PlayerState.playing),
-        child: const Text('Start Game'),
-      )
+
+    _isReady
+      ? OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(200, 75),
+            side: const BorderSide(color: Colors.red, width: 3),
+            backgroundColor: Colors.red[300],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(35),
+            ),
+          ),
+          onPressed: () {
+            setState(() => setState(() => _isReady = false));
+          },
+          child: const Text('CANCEL', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
+        )
+      : ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(200, 75),
+          backgroundColor: Colors.green[400],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(35),
+          ),
+        ),
+        onPressed: () => setState(() => _isReady = true),
+        child: const Text('READY', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
+      ),
     ]);
   }
 }
