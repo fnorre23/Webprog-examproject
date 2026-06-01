@@ -3,43 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import 'game_types.dart';
+import 'player_processing.dart';
 
 import 'widgets/tile.dart';
 import 'widgets/keyboard.dart';
 
-/////////// Socket IO ////////////
-
-// sender guess til backend
-// TO-do => skal også kunne behandle response fra backend, og opdatere guesses
-class Game {
-  final socket =io.io('http://localhost:8080', io.OptionBuilder()
-    .setTransports(['websocket'])
-    .disableAutoConnect()
-    .build());
-
-  final void Function()? onUpdate;
-  List<List<LetterInfo>> guesses = [];
-
-  Game({this.onUpdate}) {
-    socket.connect();
-    socket.on('guess_validation', (data) {
-      print ('Recieved guess validation: $data');
-      
-      if (data['is_valid'] != true) return;
-
-      final row = parseGuess(data as Map<String, dynamic>);
-      guesses.add(row);
-      onUpdate?.call();
-      });
-  }
-
-  void guess(String guess) {
-    socket.emit('guess', guess);
-      print('Guess sent: $guess');
-  }
-}
-
-/////////////////////////////////
 
 
 class GamePage extends StatefulWidget {

@@ -1,27 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import 'main.dart';
-
-class PlayerProcess {
-  final socket = io.io('http://localhost:8080', io.OptionBuilder()
-    .setTransports(['websocket', 'polling'])
-    .disableAutoConnect()
-    .build());
-
-  void playerName(String playerName) {
-    socket.emit('join', playerName);
-      print('Player name sent: $playerName');
-  }
-
-  void readyUp() {
-    socket.emit('ready_up');
-      print('Player is ready');
-  }
-}
-
+import 'player_processing.dart';
 
 class LobbyScreen extends StatefulWidget {
   final void Function(PlayerState) onPlayerStateChange;
@@ -36,7 +18,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
   final keyIsFirstLoaded = 'is_first_loaded';
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  final PlayerProcess _playerProcess = PlayerProcess();
+  late final PlayerProcess _playerProcess;
+
   bool _isReady = false;
   int _countdown = 5;
   Timer? _timer;
@@ -46,21 +29,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
   @override
   void initState() {
     super.initState();
-    _playerProcess.socket.connect();
-    _playerProcess.socket.on('state', (data) {
-      print('state received: $data');
-      if (data == null || data['players'] == null) return;
-      final playersData = Map<String, dynamic>.from(data['players']);
-      setState(() {
-        _players = playersData.map((id, player) => MapEntry(id, player['name'] as String));
-      });
-    });
+     _playerProcess = PlayerProcess(
+      onStateUpdate: (players) => setState(() => _players = players),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showDialogIfFirstLoaded();
     });
   }
 
-    @override
+  @override
   void dispose() {
     _textEditingController.dispose();
     _focusNode.dispose();
@@ -72,7 +49,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
   void _playerNameSubmit() {
     final playerName = _textEditingController.text.trim();
     if (playerName.isEmpty) return;
-    _playerProcess.playerName(playerName);
+    _playerProcess.joinGame(playerName);
+    Navigator.of(context).pop();
+    print ('Player name submitted: ${_textEditingController.text.trim()}');
   }
 
   void _startCountdown() {
@@ -115,8 +94,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
               ),
               onSubmitted: (_) {
                 _playerNameSubmit();
-                Navigator.of(context).pop();
-                print ('Player name submitted: ${_textEditingController.text.trim()}');
               },
             ),  
           actions: [
@@ -124,8 +101,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
               child: const Text('Submit'),
               onPressed: () {
                 _playerNameSubmit();
-                Navigator.of(context).pop();
-                print ('Player name submitted: ${_textEditingController.text.trim()}');
               },
             ),
           ],
@@ -157,7 +132,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           ),
           onPressed: () {
             setState(() => _isReady = false);
-            _playerProcess.socket.emit('player_unready');
+            _playerProcess.unready();
             print('Player is not ready');
             _cancelCountdown();
           },
