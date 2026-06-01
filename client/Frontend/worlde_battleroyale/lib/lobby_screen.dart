@@ -33,6 +33,8 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
   final FocusNode _focusNode = FocusNode();
   final PlayerProcess _playerProcess = PlayerProcess();
   bool _isReady = false;
+  int _countdown = 5;
+  Timer? _timer;
 
 
   @override
@@ -49,6 +51,7 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
     _textEditingController.dispose();
     _focusNode.dispose();
     _playerProcess.socket.disconnect();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -56,6 +59,19 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
     final playerName = _textEditingController.text.trim();
     if (playerName.isEmpty) return;
     _playerProcess.playerName(playerName);
+  }
+
+  void _startCountdown() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_countdown > 0) {
+          _countdown--;
+        } else {
+          timer.cancel();
+          widget.onPlayerStateChange(PlayerState.playing);
+        }
+      });
+    });
   }
 
 // Her er alt der har med pop-up navgivning af spilleren.
@@ -119,7 +135,7 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
             ),
           ),
           onPressed: () {
-            setState(() => setState(() => _isReady = false));
+            setState(() => _isReady = false);
           },
           child: const Text('CANCEL', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
         )
@@ -131,9 +147,18 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
             borderRadius: BorderRadius.circular(35),
           ),
         ),
-        onPressed: () => setState(() => _isReady = true),
+        onPressed: () {
+          setState(() => _isReady = true);
+          _startCountdown();
+        },
         child: const Text('READY', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
       ),
+      const SizedBox(height: 12),
+      if (_isReady)
+        Text(
+          _countdown > 0 ? 'Game starting in $_countdown...' : 'Go!',
+          style: const TextStyle(fontSize: 28),
+        ),
     ]);
   }
 }
