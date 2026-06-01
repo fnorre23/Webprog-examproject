@@ -7,6 +7,7 @@ import 'game_types.dart';
 import 'widgets/tile.dart';
 import 'widgets/keyboard.dart';
 
+/////////// Socket IO ////////////
 
 // sender guess til backend
 // TO-do => skal også kunne behandle response fra backend, og opdatere guesses
@@ -38,9 +39,7 @@ class Game {
   }
 }
 
-
-// Det meste af det her er fra FLutter Tutorial https://docs.flutter.dev/learn/pathway/tutorial
-
+/////////////////////////////////
 
 
 class GamePage extends StatefulWidget {
@@ -54,13 +53,15 @@ class _GamePageState extends State<GamePage> {
   late final Game _game;
   final FocusNode _focusNode = FocusNode();
   List<String> _currentGuess = List.filled(5, '');
-  int _cursorPost = 0;
+  int _cursorPost = 0; // hvor vi er i gættet, altså hvor næste bogstav skal ind, eller hvor backspace skal fjerne fra
 
+
+  
   @override
   void initState() {
     super.initState();
     _game = Game(onUpdate: () => setState(() {}));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {  // sørger for at keyboard listeneren får fokus når skærmen kommer frem
       _focusNode.requestFocus();
     });
   }
@@ -71,7 +72,8 @@ class _GamePageState extends State<GamePage> {
     super.dispose();
   }
 
-  void _addLetter(String letter) {
+  // tilføjer bogstav til gættet og opdaterer cursor
+  void _addLetter(String letter) {  
     if (_cursorPost < 5) {
       setState(() {
         _currentGuess[_cursorPost] = letter;
@@ -80,6 +82,7 @@ class _GamePageState extends State<GamePage> {
     }
   }
 
+  // fjerner bogstav fra gættet og opdaterer cursor
   void _backspace() {
     if (_cursorPost > 0) {
       setState(() {
@@ -100,6 +103,8 @@ class _GamePageState extends State<GamePage> {
     }
   }
 
+  // håndterer alt input fra keyboard, altså både fysisk og on-screen keyboard
+  // LogicalKeyboardKey er noget Flutter hejs, der gør vi kan bruge computerens keyboard
   void _onKey(KeyEvent event) {
     if (event is! KeyDownEvent) return;
     final key = event.logicalKey;
@@ -108,7 +113,7 @@ class _GamePageState extends State<GamePage> {
       _backspace();
     } else if (key == LogicalKeyboardKey.enter) {
       _submitGuess();
-    } else if (key.keyLabel.length == 1 &&
+    } else if (key.keyLabel.length == 1 && 
         RegExp(r'^[a-zA-Z]$').hasMatch(key.keyLabel)) {
       _addLetter(key.keyLabel.toUpperCase());
     }

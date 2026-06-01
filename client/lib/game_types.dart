@@ -1,4 +1,3 @@
-
 enum HitType { hit, partial, miss }
 
 
@@ -13,6 +12,8 @@ class LetterInfo {
     final correctIdx = json['correct_idx'] as bool;
     final inWord = json['in_word'] as bool;
 
+
+    // Laver hit types uf fra json dataen
     final HitType type;
     if (correctIdx) {
       type = HitType.hit;
@@ -24,7 +25,7 @@ class LetterInfo {
     return LetterInfo(char: json['char'], type: type);
   }
 }
-
+  
   List<LetterInfo> parseGuess(Map<String, dynamic> json) {
     final chars = json['character_info'] as List;
     return chars
