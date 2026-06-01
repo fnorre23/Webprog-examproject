@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import 'game_types.dart';
 import 'player_processing.dart';
@@ -8,28 +7,24 @@ import 'player_processing.dart';
 import 'widgets/tile.dart';
 import 'widgets/keyboard.dart';
 
-
-
 class GamePage extends StatefulWidget {
-  const GamePage({super.key});
+  final PlayerProcess playerProcess;
+  const GamePage({super.key, required this.playerProcess});
 
   @override
   State<GamePage> createState() => _GamePageState();
 }
 
 class _GamePageState extends State<GamePage> {
-  late final Game _game;
   final FocusNode _focusNode = FocusNode();
   List<String> _currentGuess = List.filled(5, '');
   int _cursorPost = 0; // hvor vi er i gættet, altså hvor næste bogstav skal ind, eller hvor backspace skal fjerne fra
-
-
   
   @override
   void initState() {
     super.initState();
-    _game = Game(onUpdate: () => setState(() {}));
-    WidgetsBinding.instance.addPostFrameCallback((_) {  // sørger for at keyboard listeneren får fokus når skærmen kommer frem
+    widget.playerProcess.onUpdate = () => setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) { 
       _focusNode.requestFocus();
     });
   }
@@ -37,6 +32,7 @@ class _GamePageState extends State<GamePage> {
   @override
   void dispose() {
     _focusNode.dispose();
+    widget.playerProcess.onUpdate = null;
     super.dispose();
   }
 
@@ -62,8 +58,9 @@ class _GamePageState extends State<GamePage> {
 
   void _submitGuess() {
     final guess = _currentGuess.join();
+    print('Submitting guess: $guess, length: ${guess.length}, socket connected: ${widget.playerProcess.socket.connected}');
     if (guess.length == 5) {
-      _game.guess(guess);
+      widget.playerProcess.guess(guess);
       setState(() {
         _currentGuess = List.filled(5, '');
         _cursorPost = 0;
@@ -92,46 +89,49 @@ Widget build(BuildContext context) {
   const int maxRows = 6;
 
   final boardRows = List.generate(maxRows, (rowIndex) {
-    if (rowIndex < _game.guesses.length) {
-      return _game.guesses[rowIndex];
+    if (rowIndex < widget.playerProcess.guesses.length) {
+      return widget.playerProcess.guesses[rowIndex];
     }
-    if (rowIndex == _game.guesses.length) {
+    if (rowIndex == widget.playerProcess.guesses.length) {
       return _currentGuess
-          .map((char) => LetterInfo(char: char, type: HitType.miss))
+          .map((char) => LetterInfo(char: char, type: null))
           .toList();
     }
     return List.generate(
       5,
-      (_) => LetterInfo(char: '', type: HitType.miss),
+      (_) => LetterInfo(char: '', type: null),
     );
   });
 
     return KeyboardListener(
       focusNode: _focusNode,
       onKeyEvent: _onKey,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            for (var guess in boardRows)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var letter in guess)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 2.5, vertical: 2.5),
-                      child: Tile(letter.char, letter.type),
-                    ),
-                ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Padding(
+          padding: const EdgeInsets.all(100.0),
+          child: Column(
+            children: [
+              for (var guess in boardRows)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var letter in guess)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 2.5, vertical: 2.5),
+                        child: Tile(letter.char, letter.type),
+                      ),
+                  ],
+                ),
+              const SizedBox(height: 150),
+              Keyboard(
+                onLetter: _addLetter,
+                onBackspace: _backspace,
+                onEnter: _submitGuess,
               ),
-            const SizedBox(height: 16),
-            Keyboard(
-              onLetter: _addLetter,
-              onBackspace: _backspace,
-              onEnter: _submitGuess,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

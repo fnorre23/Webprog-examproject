@@ -25,7 +25,7 @@ class Keyboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 500,
+      width: 600,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -61,9 +61,9 @@ class _KeyButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 15.0 * flex,
+      width: 20.0 * flex,
       child: Padding(
-        padding: const EdgeInsets.all(2),
+        padding: const EdgeInsets.all(3),
         child: Material(
           color: const Color.fromARGB(255, 220, 220, 220),
           borderRadius: BorderRadius.circular(4),
@@ -71,14 +71,14 @@ class _KeyButton extends StatelessWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(4),
             child: SizedBox(
-              height: 50,
+              height: 70,
               child: Center(
                 child: Text(
                   label,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                    fontSize: 20,
                   ),
                 ),
               ),

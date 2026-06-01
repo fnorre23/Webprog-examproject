@@ -7,8 +7,8 @@ class PlayerProcess {
     .disableAutoConnect()
     .build());
 
-  final void Function()? onUpdate;
-  final void Function(Map<String, String>)? onStateUpdate;
+  void Function()? onUpdate;
+  void Function(Map<String, String>)? onStateUpdate;
   List<List<LetterInfo>> guesses = [];
 
   PlayerProcess({this.onUpdate, this.onStateUpdate}) {
@@ -22,11 +22,10 @@ class PlayerProcess {
     });
 
     socket.on('guess_validation', (data) {
-      print ('Recieved guess validation: $data');
-      
+      print('Recieved guess validation: $data');
+      final map = Map<String, dynamic>.from(data as Map);      
       if (data['is_valid'] != true) return;
-
-      final row = parseGuess(data as Map<String, dynamic>);
+      final row = parseGuess(map);
       guesses.add(row);
       onUpdate?.call();
       });

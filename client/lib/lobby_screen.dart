@@ -7,8 +7,9 @@ import 'player_processing.dart';
 
 class LobbyScreen extends StatefulWidget {
   final void Function(PlayerState) onPlayerStateChange;
+  final PlayerProcess playerProcess;
 
-  const LobbyScreen({super.key, required this.onPlayerStateChange});
+  const LobbyScreen({super.key, required this.playerProcess, required this.onPlayerStateChange});
 
   @override
   State<LobbyScreen> createState() => _LobbyScreenState();
@@ -18,7 +19,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
   final keyIsFirstLoaded = 'is_first_loaded';
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  late final PlayerProcess _playerProcess;
 
   bool _isReady = false;
   int _countdown = 5;
@@ -29,9 +29,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   @override
   void initState() {
     super.initState();
-     _playerProcess = PlayerProcess(
-      onStateUpdate: (players) => setState(() => _players = players),
-    );
+    widget.playerProcess.onStateUpdate = (players) => setState(() => _players = players);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showDialogIfFirstLoaded();
     });
@@ -41,15 +39,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
   void dispose() {
     _textEditingController.dispose();
     _focusNode.dispose();
-    _playerProcess.socket.disconnect();
     _timer?.cancel();
+    widget.playerProcess.onStateUpdate = null;
     super.dispose();
   }
 
   void _playerNameSubmit() {
     final playerName = _textEditingController.text.trim();
     if (playerName.isEmpty) return;
-    _playerProcess.joinGame(playerName);
+    widget.playerProcess.joinGame(playerName);
     Navigator.of(context).pop();
     print ('Player name submitted: ${_textEditingController.text.trim()}');
   }
@@ -132,7 +130,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           ),
           onPressed: () {
             setState(() => _isReady = false);
-            _playerProcess.unready();
+            widget.playerProcess.unready();
             print('Player is not ready');
             _cancelCountdown();
           },
@@ -149,7 +147,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         ),
         onPressed: () {
           setState(() => _isReady = true);
-          _playerProcess.readyUp();
+          widget.playerProcess.readyUp();
           print('Player is ready');
           _startCountdown();
         },

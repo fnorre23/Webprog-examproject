@@ -4,7 +4,7 @@ enum HitType { hit, partial, miss }
 //Behandler json fra backend
 class LetterInfo {
   final String char;
-  final HitType type;
+  final HitType? type;
 
   LetterInfo({required this.char, required this.type});
 
