@@ -7,13 +7,18 @@ import 'main.dart';
 
 class PlayerProcess {
   final socket = io.io('http://localhost:8080', io.OptionBuilder()
-    .setTransports(['websocket'])
+    .setTransports(['websocket', 'polling'])
     .disableAutoConnect()
     .build());
 
   void playerName(String playerName) {
-    socket.emit('player_name', playerName);
+    socket.emit('join', playerName);
       print('Player name sent: $playerName');
+  }
+
+  void readyUp() {
+    socket.emit('ready_up');
+      print('Player is ready');
   }
 }
 
@@ -24,10 +29,10 @@ class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key, required this.onPlayerStateChange});
 
   @override
-  State<LobbyScreen> createState() => _LobbyScreenPopUpPlayerNamingState();
+  State<LobbyScreen> createState() => _LobbyScreenState();
 }
 
-class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
+class _LobbyScreenState extends State<LobbyScreen> {
   final keyIsFirstLoaded = 'is_first_loaded';
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
@@ -35,12 +40,21 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
   bool _isReady = false;
   int _countdown = 5;
   Timer? _timer;
+  Map<String, String> _players = {};
 
 
   @override
   void initState() {
     super.initState();
     _playerProcess.socket.connect();
+    _playerProcess.socket.on('state', (data) {
+      print('state received: $data');
+      if (data == null || data['players'] == null) return;
+      final playersData = Map<String, dynamic>.from(data['players']);
+      setState(() {
+        _players = playersData.map((id, player) => MapEntry(id, player['name'] as String));
+      });
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showDialogIfFirstLoaded();
     });
@@ -62,6 +76,7 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
   }
 
   void _startCountdown() {
+    _cancelCountdown();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_countdown > 0) {
@@ -72,6 +87,11 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
         }
       });
     });
+  }
+
+  void _cancelCountdown() {
+    _timer?.cancel();
+    setState(() => _countdown = 5);
   }
 
 // Her er alt der har med pop-up navgivning af spilleren.
@@ -124,6 +144,7 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
       const Text ('Lobby', style: TextStyle(fontSize: 28)),
       const SizedBox(height:12),
 
+
     _isReady
       ? OutlinedButton(
           style: OutlinedButton.styleFrom(
@@ -136,9 +157,13 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
           ),
           onPressed: () {
             setState(() => _isReady = false);
+            _playerProcess.socket.emit('player_unready');
+            print('Player is not ready');
+            _cancelCountdown();
           },
           child: const Text('CANCEL', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
         )
+
       : ElevatedButton(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(200, 75),
@@ -149,16 +174,25 @@ class _LobbyScreenPopUpPlayerNamingState extends State<LobbyScreen> {
         ),
         onPressed: () {
           setState(() => _isReady = true);
+          _playerProcess.readyUp();
+          print('Player is ready');
           _startCountdown();
         },
         child: const Text('READY', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
       ),
+
       const SizedBox(height: 12),
       if (_isReady)
         Text(
           _countdown > 0 ? 'Game starting in $_countdown...' : 'Go!',
           style: const TextStyle(fontSize: 28),
         ),
+
+        const SizedBox(height: 24),
+        const Text('Players in lobby:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        for (var playerName in _players.values)
+          Text(playerName, style: const TextStyle(fontSize: 18)),
     ]);
   }
 }

@@ -21,7 +21,7 @@ async function processWordsFile(path: string) {
 
 // Saetter et nyt correct word. burde merges med setNewCorrectWord
 async function getCorrectWord() {
-    const words: string[] | undefined = await processWordsFile('./word-banks/word-bank.csv');
+    const words: string[] | undefined = await processWordsFile('./src/word-banks/word-bank.csv');
     const correctWord: string = words[Math.floor(Math.random() * words.length)]; // random ord
     if (!correctWord) throw new Error("No words available");
     return correctWord;
@@ -33,7 +33,7 @@ export async function setNewCorrectWord() {
 };
 
 // Parser csv fil saa vi har valid words, og generer vi et correct ord fra vores word bank, om er alle ord der kan vaere de rigtige. 
-const validWords: string[] = await processWordsFile('./word-banks/valid-words.csv');
+const validWords: string[] = await processWordsFile('./src/word-banks/valid-words.csv');
 export let correctWord: string = await getCorrectWord();
 console.log('The correct word for the round is: ' + correctWord);
 
