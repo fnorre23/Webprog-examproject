@@ -13,8 +13,8 @@ class Tile extends StatelessWidget {
     final container = AnimatedContainer(
       duration: Duration(milliseconds: 500),
       curve: Curves.bounceIn,
-      height: 60,
-      width: 60,
+      height: 70,
+      width: 70,
       decoration: BoxDecoration(
         border: Border.all(color: letter.isNotEmpty ? Colors.grey.shade900 : Colors.grey.shade400),
         color: switch (hitType) {

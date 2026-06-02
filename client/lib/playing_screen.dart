@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 
 import 'game_types.dart';
 import 'player_processing.dart';
@@ -19,11 +20,21 @@ class _GamePageState extends State<GamePage> {
   final FocusNode _focusNode = FocusNode();
   List<String> _currentGuess = List.filled(5, '');
   int _cursorPost = 0; // hvor vi er i gættet, altså hvor næste bogstav skal ind, eller hvor backspace skal fjerne fra
+  int _secondsLeft = 120;
+  Timer? _timer;
   
   @override
   void initState() {
     super.initState();
-    widget.playerProcess.onUpdate = () => setState(() {});
+    widget.playerProcess.onUpdate = widget.playerProcess.onUpdate = () => setState(() {});
+
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_secondsLeft > 0) _secondsLeft--;
+      });
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) { 
       _focusNode.requestFocus();
     });
@@ -31,6 +42,7 @@ class _GamePageState extends State<GamePage> {
 
   @override
   void dispose() {
+    _timer?.cancel();
     _focusNode.dispose();
     widget.playerProcess.onUpdate = null;
     super.dispose();
@@ -104,38 +116,58 @@ class _GamePageState extends State<GamePage> {
       );
     });
 
-      return KeyboardListener(
-        focusNode: _focusNode,
-        onKeyEvent: _onKey,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Padding(
-            padding: const EdgeInsets.all(100.0),
-            child: Column(
-              children: [
-                for (var guess in boardRows)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (var i = 0; i < guess.length; i++)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 2.5, vertical: 2.5),
-                          child: Tile(guess[i].char, guess[i].type,index: i),
-                        ),
-                    ],
-                  ),
-                const SizedBox(height: 150),
-                Keyboard(
-                  onLetter: _addLetter,
-                  onBackspace: _backspace,
-                  onEnter: _submitGuess,
+    final minutes = _secondsLeft ~/ 60;
+    final seconds = _secondsLeft % 60;
+    final timerDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+      return Stack(
+        children: [      
+          KeyboardListener(
+            focusNode: _focusNode,
+            onKeyEvent: _onKey,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: const EdgeInsets.all(100.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 100),
+                    for (var guess in boardRows)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (var i = 0; i < guess.length; i++)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 2.5, vertical: 2.5),
+                              child: Tile(guess[i].char, guess[i].type,index: i),
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 150),
+                    Keyboard(
+                      onLetter: _addLetter,
+                      onBackspace: _backspace,
+                      onEnter: _submitGuess,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                timerDisplay,
+                style: const TextStyle(fontSize: 50,fontWeight: FontWeight.bold),
+              ),
+             )
+          )
+        ],
       );
-  }
+   }
 }
 
