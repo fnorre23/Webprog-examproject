@@ -45,7 +45,6 @@ class PlayerProcess {
     socket.emit('unready');
       print('Player is not ready');
   }
-    
 
   void guess(String guess) {
     socket.emit('guess', guess);

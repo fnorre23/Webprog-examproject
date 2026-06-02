@@ -84,57 +84,58 @@ class _GamePageState extends State<GamePage> {
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  const int maxRows = 6;
+  // Her laver vi de 6 rækker til gæt
+  @override
+  Widget build(BuildContext context) {
+    const int maxRows = 6;
 
-  final boardRows = List.generate(maxRows, (rowIndex) {
-    if (rowIndex < widget.playerProcess.guesses.length) {
-      return widget.playerProcess.guesses[rowIndex];
-    }
-    if (rowIndex == widget.playerProcess.guesses.length) {
-      return _currentGuess
-          .map((char) => LetterInfo(char: char, type: null))
-          .toList();
-    }
-    return List.generate(
-      5,
-      (_) => LetterInfo(char: '', type: null),
-    );
-  });
+    final boardRows = List.generate(maxRows, (rowIndex) {
+      if (rowIndex < widget.playerProcess.guesses.length) {
+        return widget.playerProcess.guesses[rowIndex];
+      }
+      if (rowIndex == widget.playerProcess.guesses.length) {
+        return _currentGuess
+            .map((char) => LetterInfo(char: char, type: null))
+            .toList();
+      }
+      return List.generate(
+        5,
+        (_) => LetterInfo(char: '', type: null),
+      );
+    });
 
-    return KeyboardListener(
-      focusNode: _focusNode,
-      onKeyEvent: _onKey,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Padding(
-          padding: const EdgeInsets.all(100.0),
-          child: Column(
-            children: [
-              for (var guess in boardRows)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (var letter in guess)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 2.5, vertical: 2.5),
-                        child: Tile(letter.char, letter.type),
-                      ),
-                  ],
+      return KeyboardListener(
+        focusNode: _focusNode,
+        onKeyEvent: _onKey,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: const EdgeInsets.all(100.0),
+            child: Column(
+              children: [
+                for (var guess in boardRows)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < guess.length; i++)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 2.5, vertical: 2.5),
+                          child: Tile(guess[i].char, guess[i].type,index: i),
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 150),
+                Keyboard(
+                  onLetter: _addLetter,
+                  onBackspace: _backspace,
+                  onEnter: _submitGuess,
                 ),
-              const SizedBox(height: 150),
-              Keyboard(
-                onLetter: _addLetter,
-                onBackspace: _backspace,
-                onEnter: _submitGuess,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
