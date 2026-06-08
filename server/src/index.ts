@@ -13,7 +13,7 @@ const PORT: number = 8080;
 
 const server = http.createServer(app);
 
-// IO haandterer websockets, og derfinerer derfor selv CORS shit
+// IO haandterer websockets, og definerer derfor selv CORS shit
 const io = new Server(server, {
     cors: {
         origin: '*',
@@ -36,6 +36,7 @@ const io = new Server(server, {
 app.use(express.text());
 
 // CORS settings til almene HTTP methods
+// TODO: skal måske slettes
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -59,7 +60,7 @@ server.listen(PORT, () => {
 
 
 
-// GLOBAL STATES ////////////////
+// GLOBAL STATE ////////////////
 
 let phase: Phase = 'lobby';
 
@@ -108,7 +109,6 @@ io.on('connection', (socket) => {
 
     });
 
-    // Tager ikke hoejde for antallet af spillere i lobbyen
     socket.on('ready_up', () => {
         let player = global_state.players[socket.id];
         player.is_ready = true;
@@ -126,6 +126,14 @@ io.on('connection', (socket) => {
         nextRound();
     });
 
+    socket.on('unready', () => {
+        let player = global_state.players[socket.id];
+        player.is_ready = false;
+        global_state.phase = 'lobby';
+        io.emit('state', sanitize_global_state());
+        placement_counter = 0;
+    })
+
     socket.on('guess', (guess) => {
 
         let player = global_state.players[socket.id]
@@ -136,7 +144,7 @@ io.on('connection', (socket) => {
         player.current_guess = guess;
         player.guesses!.push(guess);
 
-        let jsonResponse, guessed_correct = checkGuess(guess)
+        const [jsonResponse, guessed_correct] = checkGuess(guess)
 
         if (guessed_correct) {
             player.placement = placement_counter;
@@ -148,7 +156,7 @@ io.on('connection', (socket) => {
         }
 
         // Sender svar tilbage
-        socket.emit('guess_validation', JSON.stringify(jsonResponse));
+        socket.emit('guess_validation', jsonResponse);
 
         // TODO: Send player state
 
