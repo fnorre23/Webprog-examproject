@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'playing_screen.dart';
 import 'lobby_screen.dart';
+import 'player_processing.dart';
 
 
 void main() {
@@ -28,19 +29,22 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   PlayerState _playerState = PlayerState.lobby;
   void _setPlayerState(PlayerState newState) => setState(() => _playerState = newState);
+  late final PlayerProcess _playerProcess;
 
+  @override
+  void initState() {
+    super.initState();
+    _playerProcess = PlayerProcess();
+  }
 
   @override
   Widget build(BuildContext context) {
-    Widget body; 
-
+    Widget body;
     switch (_playerState) {
       case PlayerState.lobby:
-        body = LobbyScreen(onPlayerStateChange: _setPlayerState);
-        break;
+        body = LobbyScreen(playerProcess: _playerProcess, onPlayerStateChange: _setPlayerState);
       case PlayerState.playing:
-        body = GamePage();
-        break;
+        body = GamePage(playerProcess: _playerProcess);
       case PlayerState.spectating:
         body = const Text('Spectating Screen');
         break;
