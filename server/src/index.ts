@@ -71,7 +71,7 @@ const global_state: State = {
 };
 
 let placement_counter = 1;
-const MIN_PLAYERS = 2;
+const MIN_PLAYERS = 1;
 
 const sanitized_state: StateDTO = {
     phase: phase,
@@ -93,9 +93,10 @@ io.on('connection', (socket) => {
             name: name.trim() || 'Player',
             has_won_round: false,
             guesses: [],
-            placement: null,
+            placement: 0,
             has_lost: false,
             is_ready: false,
+            current_round_time_left: 0,
         }
 
         console.log(`Player ${global_state.players[socket.id].name} joined the lobby with a name`);
@@ -127,8 +128,8 @@ io.on('connection', (socket) => {
         }
 
         global_state.phase = 'playing';
-        io.emit('state', sanitize_global_state());
         nextRound();
+        io.emit('state', sanitize_global_state());
     });
 
     socket.on('unready', () => {
@@ -140,16 +141,18 @@ io.on('connection', (socket) => {
         player.is_ready = false;
         global_state.phase = 'lobby';
         io.emit('state', sanitize_global_state());
-        placement_counter = 0;
     })
 
-    socket.on('guess', (guess, timer) => {
+    socket.on('guess', (data) => {
+
+        let guess = data['guess'];
+        const time_left = data['time_left'];
 
         if (typeof guess !== "string") {
             console.log("not a string!");
+            console.log(guess)
+            return;
         }
-
-        // console.log(timer);
 
         let player = global_state.players[socket.id]
         guess = guess.toLowerCase();
@@ -163,7 +166,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        console.log(`Received guess: ${guess} from ${player}`);
+        console.log(`Received guess: ${guess} from ${player.name}`);
 
         const processedGuess = checkGuess(guess)
 
@@ -171,7 +174,7 @@ io.on('connection', (socket) => {
 
         if (processedGuess.was_correct) {
             player.has_won_round = true;
-            player.current_round_time = timer;
+            player.current_round_time_left = time_left;
             player.placement = placement_counter;
             placement_counter++;
 
@@ -180,7 +183,8 @@ io.on('connection', (socket) => {
         }
 
         if (!processedGuess.was_correct && player.guesses!.length >= 6) {
-            playerLost(player);
+            player.has_lost_round = true;
+            console.log(`${player.name} lost the round due to incorrect guesses`);
             socket.emit('lost_incorrect_guesses');
         }
 
@@ -192,7 +196,12 @@ io.on('connection', (socket) => {
 
         // Tjekker om alle har svaret
         for (const player of getActivePlayers()) {
-            if (player.has_won_round == false) {
+            if (!player.has_won_round) {
+                if (player.has_lost_round) {
+                    continue;
+                }
+
+                //console.log(`${player.name} has not won round, but they are not out yet! We continue playing`);
                 return;
             }
         }
@@ -200,12 +209,14 @@ io.on('connection', (socket) => {
         // Hvis vi når hertil, skal vi til naeste runde
         nextRound();
         io.emit('next_round')
+        io.emit('state', sanitize_global_state());
 
     });
 
     socket.on('timed_out', () => {
         let player = global_state.players[socket.id];
-        playerLost(player);
+        player.has_lost_round = true;
+        console.log(`${player.name} lost round due to timing out`);
         socket.emit('lost_timeout');
     })
 
@@ -223,42 +234,52 @@ io.on('connection', (socket) => {
 // Clean up til naeste runde + vi sender til alle at det er naeste runde
 function nextRound() {
 
-    if (getActivePlayersTotal() < 2) {
-        const winner = getActivePlayers()[0].name;
-        console.log("The winner is: ");
-        console.log(winner);
+    // Hvis spillere er over midpoint, saa skal de tabe, 
+    // da en stoerre plads er skidt. 1 er bedst, 100 er vaerst
+    //
+    // Vi soerger for at midpoint altid er et ulige tal,
+    // saa vi har en lige maengde mennesker tilbage til naeste runde
+    //
+    // Paa skala, soerger vi for der altid kun er 2 i finalen
+    let midpoint_placement = Math.round(getActivePlayersTotal()) / 2
+    if (midpoint_placement % 2 === 1) midpoint_placement++;
 
-        io.emit('game_over', winner)
-        global_state.phase = 'lobby';
-        io.emit('state', sanitize_global_state());
+    // Edge case, kun 2 spillere tilbage
+    if (getActivePlayersTotal() === 2) {
+        midpoint_placement = 1;
+    }
+
+    for (const player of getActivePlayers()) {
+
+        if (player.has_lost_round) {
+            player.has_lost = true;
+        }
+
+        //console.log(`Midpoint for this round: ${midpoint_placement}`);
+
+        // Hvis de er i bottom half, har de tabt. 
+        // Vi tjekker for 0, da foerste runde starter de alle paa 0
+        if (player.placement! > midpoint_placement && player.placement != 0) {
+            console.log(`${player.name} lost this round because they were worse`);
+            player.has_lost = true;
+            player.guesses = [];
+            continue;
+        }
+
+        // Resetter deres status
+        player.has_won_round = false;
+        player.has_lost_round = false;
+        player.guesses = [];
+    }
+
+    if (getActivePlayersTotal() < 2) {
+        checkWinner();
         return;
     }
 
-    if (getActivePlayersTotal() >= 4) {
-
-        // Vi vil gerne sikre os, at det er et lige antal spillere tilbage efter en runde
-        // Derved kan de følgende runder, kun have et lige antal spillere, så vi sikrer
-        // os at der ikke er nogle edge cases, såsom 3 spillere tilbage
-        let midpoint_placement = Math.round(getActivePlayersTotal()) / 2
-        if (midpoint_placement % 2 !== 0) midpoint_placement++;
-
-        for (const player of getActivePlayers()) {
-
-            // Hvis de er i bottom half, har de tabt. 
-            // Vi tjekker for 0, da foerste runde starter de alle paa 0
-            if (player.placement! < midpoint_placement && player.placement != 0) {
-                player.has_lost = true;
-                continue;
-            }
-
-            // Resetter deres status
-            player.has_won_round = false;
-        }
-    }
-
+    // Resetter ord og placement counter til ny runde
     setNewCorrectWord();
-
-    io.emit('state', sanitize_global_state());
+    placement_counter = 1;
 }
 
 // Helpers //////////////////////////////////////////
@@ -272,13 +293,18 @@ function getPlayerTotal() {
 }
 
 function getActivePlayers() {
-    const players = Object.values(global_state.players);
+
+    const players = getPlayers();
+
     let active_players = [];
+
     for (const player of players) {
-        if (!player.has_lost)
+        // console.log(`Player ${player.name} has lost? ${player.has_lost}`);
+        if (!player.has_lost) {
             active_players.push(player);
+        }
     }
-    return active_players
+    return active_players;
 }
 
 function getActivePlayersTotal() {
@@ -286,10 +312,35 @@ function getActivePlayersTotal() {
     return active_players.length;
 }
 
-function playerLost(player: Player) {
-    player.has_lost = true;
-    console.log(`Player ${player.name} has lost`);
-    io.emit('state', sanitize_global_state());
+function checkWinner() {
+    const winner = getActivePlayers()[0];
+
+    // Mest til debug naar man er 1 spiller og skal proeve en runde
+    // burde ikke vaere relevant i et rigtigt use case
+    if (winner.placement === 0) {
+
+        console.log('a little early to have won!')
+
+    } else if (winner.has_lost) {
+
+        console.log("No winner this round...");
+
+        io.emit('game_over_no_winner', winner.name);
+        global_state.phase = 'lobby';
+        io.emit('state', sanitize_global_state());
+
+    } else {
+        console.log(`The winner is: ${winner.name}`);
+
+        io.emit('game_over', winner.name)
+        global_state.phase = 'lobby';
+        io.emit('state', sanitize_global_state());
+    }
+
+    // Resets for next round
+    for (const player of getPlayers()) {
+        player.has_lost = false
+    }
 }
 
 /**
@@ -313,7 +364,7 @@ function updatePlacements(player: Player) {
 
         if (player.guesses!.length === opponent.guesses!.length) {
 
-            if (player.current_round_time! > opponent.current_round_time!
+            if (player.current_round_time_left! < opponent.current_round_time_left!
                 && temp_placements[player.name] < temp_placements[opponent.name]) {
 
                 const temp = temp_placements[player.name];
@@ -327,6 +378,11 @@ function updatePlacements(player: Player) {
         player.placement = temp_placements[player.name];
     }
 
+    // console.log(`Current placements:`)
+    // for (const player of getActivePlayers()) {
+    //     console.log(`Player ${player.name} placement ${player.placement}`);
+    // }
+
 }
 
 // Sanitizer global state til kun den info som brugerne skal bruge
@@ -335,8 +391,8 @@ function sanitize_global_state(): StateDTO {
     for (const player of getPlayers()) {
 
         if (player.guesses!.length == 0) {
-            console.log(`No guesses from ${player.name}`)
-            continue
+            // console.log(`No guesses yet from ${player.name}`)
+            continue;
         }
 
         // Virkelig cursed overfoersel af guesses til sanitized guesses.
@@ -374,6 +430,8 @@ function sanitize_global_state(): StateDTO {
                 ]
             }
         };
+
+
 
         sanitized_state.players[player.socket_id] = {
             name: player.name,
