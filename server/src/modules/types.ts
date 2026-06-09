@@ -34,9 +34,9 @@ export interface StateDTO {
 export interface Player {
     socket_id: string,
     name: string,
-    current_guess: Guess | null,
     guesses: Guess[] | null,
     placement: number | null,
+    has_won_round: boolean
     has_lost: boolean,
     is_ready: boolean,
 }
@@ -53,27 +53,27 @@ export interface Guess {
     is_valid: boolean,
     character_info: [
         {
-            char1: string,
+            char: string,
             in_word: boolean,
             correct_idx: boolean,
         },
         {
-            char2: string,
+            char: string,
             in_word: boolean,
             correct_idx: boolean,
         },
         {
-            char3: string,
+            char: string,
             in_word: boolean,
             correct_idx: boolean,
         },
         {
-            char4: string,
+            char: string,
             in_word: boolean,
             correct_idx: boolean,
         },
         {
-            char5: string,
+            char: string,
             in_word: boolean,
             correct_idx: boolean,
         },
