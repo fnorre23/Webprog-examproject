@@ -16,7 +16,7 @@ class LobbyScreen extends StatefulWidget {
 }
 
 class _LobbyScreenState extends State<LobbyScreen> {
-  final keyIsFirstLoaded = 'is_first_loaded';
+  final keyPlayerName = 'player_name';
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
@@ -44,9 +44,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
     super.dispose();
   }
 
-  void _playerNameSubmit() {
+  Future<void> _playerNameSubmit() async {
     final playerName = _textEditingController.text.trim();
     if (playerName.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyPlayerName, playerName);
     widget.playerProcess.joinGame(playerName);
     Navigator.of(context).pop();
     print ('Player name submitted: ${_textEditingController.text.trim()}');
@@ -75,97 +77,174 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   Future<void> _showDialogIfFirstLoaded() async {
     final prefs = await SharedPreferences.getInstance();
-    final bool? isFirstLoaded = prefs.getBool(keyIsFirstLoaded);
+    final String? storedName = prefs.getString(keyPlayerName);
 
-    if (isFirstLoaded != false) {
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Welcome'),
-          content: TextField(
-              controller: _textEditingController,
-              focusNode: _focusNode,
-              maxLength: 15,
-              decoration: const InputDecoration(
-                labelText: 'Enter your name',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) {
-                _playerNameSubmit();
-              },
-            ),  
-          actions: [
-            TextButton(
-              child: const Text('Submit'),
-              onPressed: () {
-                _playerNameSubmit();
-              },
-            ),
-          ],
-        ),
-      );
-
-      await prefs.setBool(keyIsFirstLoaded, false);
+    if (storedName != null) {
+      _textEditingController.text = storedName;
     }
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Welcome'),
+        content: TextField(
+            controller: _textEditingController,
+            focusNode: _focusNode,
+            maxLength: 15,
+            decoration: const InputDecoration(
+              labelText: 'Enter your name',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (_) {
+              _playerNameSubmit();
+            },
+          ),  
+        actions: [
+          TextButton(
+            child: const Text('Submit'),
+            onPressed: () {
+              _playerNameSubmit();
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   // Det her er den faktiske lobby screen
 
   @override
   Widget build(BuildContext context) {
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      const Text ('Lobby', style: TextStyle(fontSize: 28)),
-      const SizedBox(height:12),
+    return Column(
+      children: [
+        if (_players.isNotEmpty)
+          Text(
+            'You have joined the game of \'${_players.values.first}\'',
+            style: const TextStyle(fontSize: 28),
+          ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Venstre column
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ]
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text('Last Game:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 8),
+                        Text('xxx', style: TextStyle(fontSize: 16)),
 
+                      ],
+                    ),
+                  ),
+                ),
 
-    _isReady
-      ? OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(200, 75),
-            side: const BorderSide(color: Colors.red, width: 3),
-            backgroundColor: Colors.red[300],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(35),
+                // Midterste collumn
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _isReady
+                          ? OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(200, 75),
+                                side: const BorderSide(color: Colors.red, width: 3),
+                                backgroundColor: Colors.red[300],
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(35),
+                                ),
+                              ),
+                              onPressed: () {
+                                setState(() => _isReady = false);
+                                widget.playerProcess.unready();
+                                _cancelCountdown();
+                              },
+                              child: const Text('CANCEL', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
+                            )
+                          : ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(200, 75),
+                                backgroundColor: Colors.green[400],
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(35),
+                                ),
+                              ),
+                              onPressed: () {
+                                setState(() => _isReady = true);
+                                widget.playerProcess.readyUp();
+                                _startCountdown();
+                              },
+                              child: const Text('READY', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
+                            ),
+                      SizedBox(
+                        height: 40,
+                        child: _isReady
+                            ? Text(
+                              _countdown > 0 ? 'Game starting in $_countdown...' : 'Go!',
+                              style: const TextStyle(fontSize: 28),
+                            )
+                            : null,
+                      )
+                    ],
+                  ),
+                ),
+
+                // Højre column
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: const Text('Players in lobby:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(height: 8),
+                        for (var playerName in _players.values)
+                          Text(playerName, style: const TextStyle(fontSize: 18)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          onPressed: () {
-            setState(() => _isReady = false);
-            widget.playerProcess.unready();
-            print('Player is not ready');
-            _cancelCountdown();
-          },
-          child: const Text('CANCEL', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
-        )
-
-      : ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(200, 75),
-          backgroundColor: Colors.green[400],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(35),
-          ),
         ),
-        onPressed: () {
-          setState(() => _isReady = true);
-          widget.playerProcess.readyUp();
-          print('Player is ready');
-          _startCountdown();
-        },
-        child: const Text('READY', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
-      ),
+        ],
+      );
+    }
 
-      const SizedBox(height: 12),
-      if (_isReady)
-        Text(
-          _countdown > 0 ? 'Game starting in $_countdown...' : 'Go!',
-          style: const TextStyle(fontSize: 28),
-        ),
-
-        const SizedBox(height: 24),
-        const Text('Players in lobby:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        for (var playerName in _players.values)
-          Text(playerName, style: const TextStyle(fontSize: 18)),
-    ]);
-  }
 }
