@@ -9,6 +9,7 @@ class PlayerProcess {
 
   void Function()? onUpdate;
   void Function(String)? onPhaseChange;
+  void Function()? onRoundReset;
   void Function(Map<String, String>)? onStateUpdate;
   Map<String, OtherPlayerState> otherPlayers = {};
   List<List<LetterInfo>> guesses = [];
@@ -59,6 +60,13 @@ class PlayerProcess {
       if (data['was_correct'] == true || guesses.length >= 6) hasFinished = true;
       onUpdate?.call();
     });
+
+    socket.on('next_round', (_) {
+      guesses.clear();
+      hasFinished = false;
+      onRoundReset?.call();
+    });
+
   }
 
 

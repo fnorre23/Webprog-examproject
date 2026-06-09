@@ -7,6 +7,7 @@ import 'player_processing.dart';
 
 import 'widgets/tile.dart';
 import 'widgets/keyboard.dart';
+import 'widgets/mini_board.dart';
 
 class GamePage extends StatefulWidget {
   final PlayerProcess playerProcess;
@@ -30,18 +31,16 @@ class _GamePageState extends State<GamePage> {
       if (widget.playerProcess.hasFinished) _timer?.cancel();
       setState(() {});
     };
-
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    widget.playerProcess.onRoundReset = () {
       setState(() {
-        if (_secondsLeft > 0) {
-          _secondsLeft--;
-          if (_secondsLeft == 0) widget.playerProcess.timedOut();
-        }
+        _secondsLeft = 120;
+        _currentGuess = List.filled(5, '');
+        _cursorPost = 0;
       });
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) { 
+      _resetTimer();
+    };
+    _resetTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
   }
@@ -51,7 +50,20 @@ class _GamePageState extends State<GamePage> {
     _timer?.cancel();
     _focusNode.dispose();
     widget.playerProcess.onUpdate = null;
+    widget.playerProcess.onRoundReset = null;
     super.dispose();
+  }
+
+  void _resetTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_secondsLeft > 0) {
+          _secondsLeft--;
+          if (_secondsLeft == 0) widget.playerProcess.timedOut();
+        }
+      });
+    });
   }
 
   // tilføjer bogstav til gættet og opdaterer cursor
@@ -196,7 +208,7 @@ class _GamePageState extends State<GamePage> {
                   child: Text('Players', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                   for (final player in widget.playerProcess.otherPlayers.values)
-                    _buildMiniBoard(player),               
+                    MiniBoard(player),               
               ],
             ),
           ),
@@ -204,43 +216,4 @@ class _GamePageState extends State<GamePage> {
       ],
     );
   }
-
-  Widget _buildMiniBoard(OtherPlayerState player) {
-    const  tileSize = 18.0;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(player.name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          for (int row = 0; row < 6; row++)
-            Padding(
-              padding: const EdgeInsets.only(bottom:2),
-              child: Row(
-                children: [
-                  for (int col = 0; col < 5; col++)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 2),
-                      child: Container(
-                        width: tileSize,
-                        height: tileSize,
-                        color: row < player.guesses.length
-                          ? switch (player.guesses[row][col].type) {
-                            HitType.hit => Colors.green,
-                            HitType.partial => Colors.yellow,
-                            HitType.miss => Colors.grey,
-                            null => Colors.grey.shade300,
-                          }
-                          : Colors.grey.shade200,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
 }
