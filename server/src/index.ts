@@ -91,7 +91,7 @@ io.on('connection', (socket) => {
         global_state.players[socket.id] = {
             socket_id: socket.id,
             name: name.trim() || 'Player',
-            current_guess: null,
+            has_won_round: false,
             guesses: [],
             placement: null,
             has_lost: false,
@@ -111,6 +111,11 @@ io.on('connection', (socket) => {
 
     socket.on('ready_up', () => {
         let player = global_state.players[socket.id];
+        if (player === undefined || player === null) {
+            console.log("Rogue mf proever at vaere med");
+            return;
+        }
+
         player.is_ready = true;
 
         if (getPlayerTotal() < MIN_PLAYERS) return;
@@ -128,6 +133,10 @@ io.on('connection', (socket) => {
 
     socket.on('unready', () => {
         let player = global_state.players[socket.id];
+        if (player === undefined || player === null) {
+            console.log("Rogue mf proever at vaere med");
+            return;
+        }
         player.is_ready = false;
         global_state.phase = 'lobby';
         io.emit('state', sanitize_global_state());
@@ -137,43 +146,57 @@ io.on('connection', (socket) => {
     socket.on('guess', (guess) => {
 
         let player = global_state.players[socket.id]
+        guess = guess.toLowerCase();
+
+        if (player === undefined || player === null) {
+            console.log("Rogue mf proever at vaere med");
+            return;
+        }
+
         if (player.has_lost == true) {
             return;
         }
 
-        player.current_guess = guess;
-        player.guesses!.push(guess);
+        console.log(`Received guess: ${guess} from ${player}`);
 
-        const [jsonResponse, guessed_correct] = checkGuess(guess)
+        const processedGuess = checkGuess(guess)
 
-        if (guessed_correct) {
+        player.guesses!.push(processedGuess);
+
+        if (processedGuess.was_correct) {
+            // TODO: placer ift andre spillere
             player.placement = placement_counter;
             placement_counter++;
+            player.has_won_round = true;
         }
 
-        if (!guessed_correct && player.guesses!.length >= 6) {
-            player.has_lost = true;
+        if (!processedGuess.was_correct && player.guesses!.length >= 6) {
+            playerLost(player)
         }
 
         // Sender svar tilbage
-        socket.emit('guess_validation', jsonResponse);
-
-        // TODO: Send player state
+        socket.emit('guess_validation', processedGuess);
 
         // Update info for alle
         io.emit('state', sanitize_global_state());
 
         // Tjekker om alle har svaret
-        for (const player of getPlayers()) {
-            if (player.current_guess == null) {
+        for (const player of getActivePlayers()) {
+            if (player.has_won_round == false) {
                 return;
             }
         }
 
         // HVIS VI NAAR HER, SKAL VI TIL NAESTE RUNDE
         nextRound();
+        io.emit('next_round')
 
     });
+
+    socket.on('timed_out', () => {
+        let player = global_state.players[socket.id];
+        playerLost(player);
+    })
 
     socket.on('disconnect', () => {
         console.log(`Socket ID ${socket.id} left`);
@@ -183,20 +206,30 @@ io.on('connection', (socket) => {
 
 // Clean up til naeste runde + vi sender til alle at det er naeste runde
 function nextRound() {
-    for (let player of getPlayers()) {
 
-        // Hvis de er i bottom half, har de tabt. Vi tjekker for 0, da foerste runde starter de alle paa 0
-        // TODO: Fiks til at holde styr paa aktive spillere
-        if (player.placement! < (Math.round(getPlayerTotal())) / 2
-            && player.placement != 0) {
+    if (getActivePlayersTotal() <= 3) {
 
-            player.has_lost = true;
-            continue;
-        }
+        //TODO: hvad goer vi naar de skal vinde?
 
-        // Resetter deres gaet
-        player.current_guess = null;
     }
+
+    if (getActivePlayersTotal() >= 3) {
+        for (let player of getActivePlayers()) {
+            let midpoint_placement = Math.round(getActivePlayersTotal()) / 2
+
+            // Hvis de er i bottom half, har de tabt. Vi tjekker for 0, da foerste runde starter de alle paa 0
+            if (player.placement! < midpoint_placement && player.placement != 0) {
+
+                player.has_lost = true;
+                continue;
+            }
+
+            // Resetter deres status
+            player.has_won_round = false;
+        }
+    }
+
+
 
     setNewCorrectWord();
 
@@ -214,11 +247,35 @@ function getPlayerTotal() {
     return Object.keys(global_state.players).length;
 }
 
+function getActivePlayers() {
+    const players = Object.values(global_state.players);
+    let active_players = [];
+    for (const player of players) {
+        if (player.has_lost != true)
+            active_players.push(player);
+    }
+    return active_players
+}
+
+function getActivePlayersTotal() {
+    const active_players = getActivePlayers();
+    return active_players.length;
+}
+
+function playerLost(player: Player) {
+    player.has_lost = true;
+    placement_counter++;
+    io.emit('state', sanitize_global_state());
+}
+
 // Sanitizer global state til kun den info som brugerne skal bruge
 function sanitize_global_state(): StateDTO {
 
+    //console.log('Beginning sanitation');
+
     for (const player of getPlayers()) {
         if (player.guesses == null) {
+            console.log(`No guesses from ${player.name}`)
             continue
         }
 
@@ -226,6 +283,11 @@ function sanitize_global_state(): StateDTO {
         // Kunne vaere at global sanitized state bare skulle opdateres hver gang global state opdateres med player guesses, but fuck it i guess. Nu er vi eksplicitte
         let sanitized_guesses: SanitizedGuess[] = [];
         for (let i = 0; i < player.guesses.length; i++) {
+
+            //const guess = player.guesses[i];
+
+            //console.log(`Looping player ${player.name} guesses, which have ${player.guesses.length} guesses, currently at guess ${i}, which is ${JSON.stringify(guess)}`);
+
             sanitized_guesses[i] = {
                 // TODO: .map() i stedet for hardcoding
                 character_info: [

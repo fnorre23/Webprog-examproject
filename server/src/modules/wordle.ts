@@ -24,6 +24,9 @@ async function getCorrectWord() {
     const words: string[] | undefined = await processWordsFile('./src/word-banks/word-bank.csv');
     const correctWord: string = words[Math.floor(Math.random() * words.length)]; // random ord
     if (!correctWord) throw new Error("No words available");
+
+    console.log('The correct word for the round is: ' + correctWord);
+
     return correctWord;
 }
 
@@ -46,34 +49,33 @@ console.log('The correct word for the round is: ' + correctWord);
  * */
 export function checkGuess(guess: any) {
 
-    let word_is_correct = false;
-    let jsonResponse: Guess = {
+    let processedGuess: Guess = {
         guess: guess,
         was_correct: false,
         is_valid: true,
         character_info: [
             {
-                char1: guess[0],
+                char: guess[0],
                 in_word: false,
                 correct_idx: false,
             },
             {
-                char2: guess[1],
+                char: guess[1],
                 in_word: false,
                 correct_idx: false,
             },
             {
-                char3: guess[2],
+                char: guess[2],
                 in_word: false,
                 correct_idx: false,
             },
             {
-                char4: guess[3],
+                char: guess[3],
                 in_word: false,
                 correct_idx: false,
             },
             {
-                char5: guess[4],
+                char: guess[4],
                 in_word: false,
                 correct_idx: false,
             },
@@ -83,22 +85,20 @@ export function checkGuess(guess: any) {
     if (!validWords.includes(guess) || guess == undefined) {
         console.log('Word is not valid');
 
-        jsonResponse.is_valid = false;
+        processedGuess.is_valid = false;
 
-        return JSON.stringify(jsonResponse);
+        return processedGuess;
     }
 
     // Hvis ord er korrekt goer vi bare alt true
     if (guess === correctWord) {
         for (let i = 0; i < guess.length; i++) {
-            jsonResponse.was_correct = true;
-            jsonResponse.character_info[i].in_word = true;
-            jsonResponse.character_info[i].correct_idx = true;
+            processedGuess.was_correct = true;
+            processedGuess.character_info[i].in_word = true;
+            processedGuess.character_info[i].correct_idx = true;
         }
 
-        word_is_correct = true;
-
-        return [JSON.stringify(jsonResponse), word_is_correct];
+        return processedGuess;
     }
 
     // Checking all letters against the correct word
@@ -107,14 +107,14 @@ export function checkGuess(guess: any) {
 
         if (letter == correctWord[i]) {
 
-            jsonResponse.character_info[i].in_word = true;
-            jsonResponse.character_info[i].correct_idx = true;
+            processedGuess.character_info[i].in_word = true;
+            processedGuess.character_info[i].correct_idx = true;
 
             continue;
         }
 
         if (correctWord.includes(letter)) {
-            jsonResponse.character_info[i].in_word = true;
+            processedGuess.character_info[i].in_word = true;
             continue;
         }
 
@@ -122,5 +122,5 @@ export function checkGuess(guess: any) {
 
     // console.log(JSON.stringify(jsonResponse));
 
-    return [jsonResponse, word_is_correct];
+    return processedGuess;
 }
