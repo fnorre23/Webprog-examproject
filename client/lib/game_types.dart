@@ -22,7 +22,7 @@ class LetterInfo {
     } else {
       type = HitType.miss;
     }
-    return LetterInfo(char: json['char'], type: type);
+    return LetterInfo(char: (json['char'] as String?) ?? '', type: type);
   }
 }
   

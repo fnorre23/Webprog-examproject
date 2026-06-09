@@ -26,12 +26,18 @@ class _GamePageState extends State<GamePage> {
   @override
   void initState() {
     super.initState();
-    widget.playerProcess.onUpdate = widget.playerProcess.onUpdate = () => setState(() {});
+    widget.playerProcess.onUpdate = () {
+      if (widget.playerProcess.hasFinished) _timer?.cancel();
+      setState(() {});
+    };
 
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        if (_secondsLeft > 0) _secondsLeft--;
+        if (_secondsLeft > 0) {
+          _secondsLeft--;
+          if (_secondsLeft == 0) widget.playerProcess.timedOut();
+        }
       });
     });
 
@@ -72,7 +78,7 @@ class _GamePageState extends State<GamePage> {
     final guess = _currentGuess.join();
     print('Submitting guess: $guess, length: ${guess.length}, socket connected: ${widget.playerProcess.socket.connected}');
     if (guess.length == 5) {
-      widget.playerProcess.guess(guess);
+      widget.playerProcess.guess(guess, _secondsLeft);
       setState(() {
         _currentGuess = List.filled(5, '');
         _cursorPost = 0;
@@ -84,13 +90,14 @@ class _GamePageState extends State<GamePage> {
   // LogicalKeyboardKey er noget Flutter hejs, der gør vi kan bruge computerens keyboard
   void _onKey(KeyEvent event) {
     if (event is! KeyDownEvent) return;
+    if (widget.playerProcess.hasFinished) return;
     final key = event.logicalKey;
 
     if (key == LogicalKeyboardKey.backspace) {
       _backspace();
     } else if (key == LogicalKeyboardKey.enter) {
       _submitGuess();
-    } else if (key.keyLabel.length == 1 && 
+    } else if (key.keyLabel.length == 1 &&
         RegExp(r'^[a-zA-Z]$').hasMatch(key.keyLabel)) {
       _addLetter(key.keyLabel.toUpperCase());
     }
@@ -153,9 +160,9 @@ class _GamePageState extends State<GamePage> {
                           ),
                         const SizedBox(height: 150),
                         Keyboard(
-                          onLetter: _addLetter,
-                          onBackspace: _backspace,
-                          onEnter: _submitGuess,
+                          onLetter: widget.playerProcess.hasFinished ? (_) {} : _addLetter,
+                          onBackspace: widget.playerProcess.hasFinished ? () {} : _backspace,
+                          onEnter: widget.playerProcess.hasFinished ? () {} : _submitGuess,
                         ),
                       ],
                     ),
@@ -237,4 +244,3 @@ class _GamePageState extends State<GamePage> {
   }
 
 }
-
