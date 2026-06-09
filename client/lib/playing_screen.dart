@@ -26,12 +26,18 @@ class _GamePageState extends State<GamePage> {
   @override
   void initState() {
     super.initState();
-    widget.playerProcess.onUpdate = widget.playerProcess.onUpdate = () => setState(() {});
+    widget.playerProcess.onUpdate = () {
+      if (widget.playerProcess.hasFinished) _timer?.cancel();
+      setState(() {});
+    };
 
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        if (_secondsLeft > 0) _secondsLeft--;
+        if (_secondsLeft > 0) {
+          _secondsLeft--;
+          if (_secondsLeft == 0) widget.playerProcess.timedOut();
+        }
       });
     });
 
@@ -72,7 +78,7 @@ class _GamePageState extends State<GamePage> {
     final guess = _currentGuess.join();
     print('Submitting guess: $guess, length: ${guess.length}, socket connected: ${widget.playerProcess.socket.connected}');
     if (guess.length == 5) {
-      widget.playerProcess.guess(guess);
+      widget.playerProcess.guess(guess, _secondsLeft);
       setState(() {
         _currentGuess = List.filled(5, '');
         _cursorPost = 0;
@@ -84,13 +90,14 @@ class _GamePageState extends State<GamePage> {
   // LogicalKeyboardKey er noget Flutter hejs, der gør vi kan bruge computerens keyboard
   void _onKey(KeyEvent event) {
     if (event is! KeyDownEvent) return;
+    if (widget.playerProcess.hasFinished) return;
     final key = event.logicalKey;
 
     if (key == LogicalKeyboardKey.backspace) {
       _backspace();
     } else if (key == LogicalKeyboardKey.enter) {
       _submitGuess();
-    } else if (key.keyLabel.length == 1 && 
+    } else if (key.keyLabel.length == 1 &&
         RegExp(r'^[a-zA-Z]$').hasMatch(key.keyLabel)) {
       _addLetter(key.keyLabel.toUpperCase());
     }
@@ -120,54 +127,120 @@ class _GamePageState extends State<GamePage> {
     final seconds = _secondsLeft % 60;
     final timerDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
-      return Stack(
-        children: [      
-          KeyboardListener(
-            focusNode: _focusNode,
-            onKeyEvent: _onKey,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Padding(
-                padding: const EdgeInsets.all(100.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 100),
-                    for (var guess in boardRows)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (var i = 0; i < guess.length; i++)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 2.5, vertical: 2.5),
-                              child: Tile(guess[i].char, guess[i].type,index: i),
-                            ),
-                        ],
-                      ),
-                    const SizedBox(height: 150),
-                    Keyboard(
-                      onLetter: _addLetter,
-                      onBackspace: _backspace,
-                      onEnter: _submitGuess,
+    return Row(
+      children: [
+
+        const SizedBox(width: 160),
+
+        Expanded(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [      
+              KeyboardListener(
+                focusNode: _focusNode,
+                onKeyEvent: _onKey,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: const EdgeInsets.all(100.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 100),
+                        for (var guess in boardRows)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (var i = 0; i < guess.length; i++)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 2.5, vertical: 2.5),
+                                  child: Tile(guess[i].char, guess[i].type,index: i),
+                                ),
+                            ],
+                          ),
+                        const SizedBox(height: 150),
+                        Keyboard(
+                          onLetter: widget.playerProcess.hasFinished ? (_) {} : _addLetter,
+                          onBackspace: widget.playerProcess.hasFinished ? () {} : _backspace,
+                          onEnter: widget.playerProcess.hasFinished ? () {} : _submitGuess,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Text(
+                    timerDisplay,
+                    style: const TextStyle(fontSize: 50,fontWeight: FontWeight.bold),
+                  ),
+                )
+              )
+            ],
+          ),
+        ),
+
+
+        Container(
+          width: 160,
+          color: Colors.grey.shade100,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text('Players', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  for (final player in widget.playerProcess.otherPlayers.values)
+                    _buildMiniBoard(player),               
+              ],
             ),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
-                timerDisplay,
-                style: const TextStyle(fontSize: 50,fontWeight: FontWeight.bold),
-              ),
-             )
-          )
-        ],
-      );
-   }
-}
+        ),
+      ],
+    );
+  }
 
+  Widget _buildMiniBoard(OtherPlayerState player) {
+    const  tileSize = 18.0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(player.name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          for (int row = 0; row < 6; row++)
+            Padding(
+              padding: const EdgeInsets.only(bottom:2),
+              child: Row(
+                children: [
+                  for (int col = 0; col < 5; col++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 2),
+                      child: Container(
+                        width: tileSize,
+                        height: tileSize,
+                        color: row < player.guesses.length
+                          ? switch (player.guesses[row][col].type) {
+                            HitType.hit => Colors.green,
+                            HitType.partial => Colors.yellow,
+                            HitType.miss => Colors.grey,
+                            null => Colors.grey.shade300,
+                          }
+                          : Colors.grey.shade200,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+}

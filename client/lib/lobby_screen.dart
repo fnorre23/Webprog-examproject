@@ -21,6 +21,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   final FocusNode _focusNode = FocusNode();
 
   bool _isReady = false;
+  bool _gameStarting = false;
   int _countdown = 5;
   Timer? _timer;
   Map<String, String> _players = {};
@@ -32,6 +33,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
     widget.playerProcess.onStateUpdate = (players) => setState(() => _players = players);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showDialogIfFirstLoaded();
+    widget.playerProcess.onPhaseChange = (phase) {
+      if (phase == 'playing') _startCountdown();
+    };
     });
   }
 
@@ -41,6 +45,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _focusNode.dispose();
     _timer?.cancel();
     widget.playerProcess.onStateUpdate = null;
+    widget.playerProcess.onPhaseChange = null;
     super.dispose();
   }
 
@@ -56,6 +61,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   void _startCountdown() {
     _cancelCountdown();
+    setState(() => _gameStarting = true);
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_countdown > 0) {
@@ -70,7 +76,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   void _cancelCountdown() {
     _timer?.cancel();
-    setState(() => _countdown = 5);
+    setState(() {
+       _countdown = 5;
+       _gameStarting = false;
+    });
   }
 
 // Her er alt der har med pop-up navgivning af spilleren.
@@ -192,13 +201,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
                               onPressed: () {
                                 setState(() => _isReady = true);
                                 widget.playerProcess.readyUp();
-                                _startCountdown();
                               },
                               child: const Text('READY', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
                             ),
                       SizedBox(
                         height: 40,
-                        child: _isReady
+                        child: _gameStarting
                             ? Text(
                               _countdown > 0 ? 'Game starting in $_countdown...' : 'Go!',
                               style: const TextStyle(fontSize: 28),

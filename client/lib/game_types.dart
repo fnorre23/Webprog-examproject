@@ -22,7 +22,7 @@ class LetterInfo {
     } else {
       type = HitType.miss;
     }
-    return LetterInfo(char: json['char'], type: type);
+    return LetterInfo(char: (json['char'] as String?) ?? '', type: type);
   }
 }
   
@@ -31,4 +31,12 @@ class LetterInfo {
     return chars
         .map((c) => LetterInfo.fromJson(c as Map<String, dynamic>))
         .toList();
+}
+
+class OtherPlayerState {
+  final String name;
+  final List<List<LetterInfo>> guesses;
+  final bool hasLost;
+
+  OtherPlayerState({required this.name, required this.guesses, required this.hasLost});
 }
