@@ -9,6 +9,7 @@ class PlayerProcess {
 
   void Function()? onUpdate;
   void Function(Map<String, String>)? onStateUpdate;
+  Map<String, OtherPlayerState> otherPlayers = {};
   List<List<LetterInfo>> guesses = [];
 
   PlayerProcess({this.onUpdate, this.onStateUpdate}) {
@@ -19,6 +20,23 @@ class PlayerProcess {
       final playersData = Map<String, dynamic>.from(data['players']);
       final players = playersData.map((id, player) => MapEntry(id, (player as Map)['name'] as String));
       onStateUpdate?.call(players);
+
+      final newOtherPlayers = <String, OtherPlayerState>{};
+      for (final entry in playersData.entries) {
+        if (entry.key == socket.id) continue;
+        final player = entry.value as Map;
+        final rawGuesses = player['guesses'] as List? ?? [];
+        final guesses = rawGuesses
+          .map((guess) => parseGuess(Map<String, dynamic>.from(guess as Map)))
+          .toList();
+        newOtherPlayers[entry.key] = OtherPlayerState(
+          name: player['name'] as String,
+          guesses: guesses,
+          hasLost: player['has_lost'] as bool? ?? false,
+        );
+      }
+      otherPlayers = newOtherPlayers;
+      onUpdate?.call();
     });
 
     socket.on('guess_validation', (data) {
@@ -28,8 +46,15 @@ class PlayerProcess {
       final row = parseGuess(map);
       guesses.add(row);
       onUpdate?.call();
-      });
+    });
+
+
+
   }
+
+
+
+
 
   void joinGame(String playerName) {
     socket.emit('join', playerName);

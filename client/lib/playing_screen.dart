@@ -120,54 +120,121 @@ class _GamePageState extends State<GamePage> {
     final seconds = _secondsLeft % 60;
     final timerDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
-      return Stack(
-        children: [      
-          KeyboardListener(
-            focusNode: _focusNode,
-            onKeyEvent: _onKey,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Padding(
-                padding: const EdgeInsets.all(100.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 100),
-                    for (var guess in boardRows)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (var i = 0; i < guess.length; i++)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 2.5, vertical: 2.5),
-                              child: Tile(guess[i].char, guess[i].type,index: i),
-                            ),
-                        ],
-                      ),
-                    const SizedBox(height: 150),
-                    Keyboard(
-                      onLetter: _addLetter,
-                      onBackspace: _backspace,
-                      onEnter: _submitGuess,
+    return Row(
+      children: [
+
+        const SizedBox(width: 160),
+
+        Expanded(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [      
+              KeyboardListener(
+                focusNode: _focusNode,
+                onKeyEvent: _onKey,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: const EdgeInsets.all(100.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 100),
+                        for (var guess in boardRows)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (var i = 0; i < guess.length; i++)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 2.5, vertical: 2.5),
+                                  child: Tile(guess[i].char, guess[i].type,index: i),
+                                ),
+                            ],
+                          ),
+                        const SizedBox(height: 150),
+                        Keyboard(
+                          onLetter: _addLetter,
+                          onBackspace: _backspace,
+                          onEnter: _submitGuess,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Text(
+                    timerDisplay,
+                    style: const TextStyle(fontSize: 50,fontWeight: FontWeight.bold),
+                  ),
+                )
+              )
+            ],
+          ),
+        ),
+
+
+        Container(
+          width: 160,
+          color: Colors.grey.shade100,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text('Players', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  for (final player in widget.playerProcess.otherPlayers.values)
+                    _buildMiniBoard(player),               
+              ],
             ),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
-                timerDisplay,
-                style: const TextStyle(fontSize: 50,fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMiniBoard(OtherPlayerState player) {
+    const  tileSize = 18.0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(player.name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          for (int row = 0; row < 6; row++)
+            Padding(
+              padding: const EdgeInsets.only(bottom:2),
+              child: Row(
+                children: [
+                  for (int col = 0; col < 5; col++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 2),
+                      child: Container(
+                        width: tileSize,
+                        height: tileSize,
+                        color: row < player.guesses.length
+                          ? switch (player.guesses[row][col].type) {
+                            HitType.hit => Colors.green,
+                            HitType.partial => Colors.yellow,
+                            HitType.miss => Colors.grey,
+                            null => Colors.grey.shade300,
+                          }
+                          : Colors.grey.shade200,
+                      ),
+                    ),
+                ],
               ),
-             )
-          )
+            ),
         ],
-      );
-   }
+      ),
+    );
+  }
+
 }
 
