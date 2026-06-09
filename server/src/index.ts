@@ -143,7 +143,13 @@ io.on('connection', (socket) => {
         placement_counter = 0;
     })
 
-    socket.on('guess', (guess) => {
+    socket.on('guess', (guess, timer) => {
+
+        if (typeof guess !== "string") {
+            console.log("not a string!");
+        }
+
+        // console.log(timer);
 
         let player = global_state.players[socket.id]
         guess = guess.toLowerCase();
@@ -164,14 +170,18 @@ io.on('connection', (socket) => {
         player.guesses!.push(processedGuess);
 
         if (processedGuess.was_correct) {
-            // TODO: placer ift andre spillere
+            player.has_won_round = true;
+            player.current_round_time = timer;
             player.placement = placement_counter;
             placement_counter++;
-            player.has_won_round = true;
+
+            updatePlacements(player);
+
         }
 
         if (!processedGuess.was_correct && player.guesses!.length >= 6) {
-            playerLost(player)
+            playerLost(player);
+            socket.emit('lost_incorrect_guesses');
         }
 
         // Sender svar tilbage
@@ -187,7 +197,7 @@ io.on('connection', (socket) => {
             }
         }
 
-        // HVIS VI NAAR HER, SKAL VI TIL NAESTE RUNDE
+        // Hvis vi når hertil, skal vi til naeste runde
         nextRound();
         io.emit('next_round')
 
@@ -196,10 +206,16 @@ io.on('connection', (socket) => {
     socket.on('timed_out', () => {
         let player = global_state.players[socket.id];
         playerLost(player);
+        socket.emit('lost_timeout');
     })
 
     socket.on('disconnect', () => {
-        console.log(`Socket ID ${socket.id} left`);
+        console.log(`Socket ID ${socket.id} disconnected`);
+
+        if (global_state.players[socket.id] !== null)
+            delete global_state.players[socket.id];
+
+        io.emit('state', sanitize_global_state());
     });
 
 });
@@ -207,19 +223,30 @@ io.on('connection', (socket) => {
 // Clean up til naeste runde + vi sender til alle at det er naeste runde
 function nextRound() {
 
-    if (getActivePlayersTotal() <= 3) {
+    if (getActivePlayersTotal() < 2) {
+        const winner = getActivePlayers()[0].name;
+        console.log("The winner is: ");
+        console.log(winner);
 
-        //TODO: hvad goer vi naar de skal vinde?
-
+        io.emit('game_over', winner)
+        global_state.phase = 'lobby';
+        io.emit('state', sanitize_global_state());
+        return;
     }
 
-    if (getActivePlayersTotal() >= 3) {
-        for (let player of getActivePlayers()) {
-            let midpoint_placement = Math.round(getActivePlayersTotal()) / 2
+    if (getActivePlayersTotal() >= 4) {
 
-            // Hvis de er i bottom half, har de tabt. Vi tjekker for 0, da foerste runde starter de alle paa 0
+        // Vi vil gerne sikre os, at det er et lige antal spillere tilbage efter en runde
+        // Derved kan de følgende runder, kun have et lige antal spillere, så vi sikrer
+        // os at der ikke er nogle edge cases, såsom 3 spillere tilbage
+        let midpoint_placement = Math.round(getActivePlayersTotal()) / 2
+        if (midpoint_placement % 2 !== 0) midpoint_placement++;
+
+        for (const player of getActivePlayers()) {
+
+            // Hvis de er i bottom half, har de tabt. 
+            // Vi tjekker for 0, da foerste runde starter de alle paa 0
             if (player.placement! < midpoint_placement && player.placement != 0) {
-
                 player.has_lost = true;
                 continue;
             }
@@ -229,11 +256,8 @@ function nextRound() {
         }
     }
 
-
-
     setNewCorrectWord();
 
-    io.emit('next_round');
     io.emit('state', sanitize_global_state());
 }
 
@@ -251,7 +275,7 @@ function getActivePlayers() {
     const players = Object.values(global_state.players);
     let active_players = [];
     for (const player of players) {
-        if (player.has_lost != true)
+        if (!player.has_lost)
             active_players.push(player);
     }
     return active_players
@@ -264,60 +288,87 @@ function getActivePlayersTotal() {
 
 function playerLost(player: Player) {
     player.has_lost = true;
-    placement_counter++;
+    console.log(`Player ${player.name} has lost`);
     io.emit('state', sanitize_global_state());
+}
+
+/**
+* Creates a temp object for player placements, and then compares
+* placements and times, and swaps the temp according to this. 
+* lastly writes back to the player objects with updated placements
+* 
+* The reason for temp placements, is that if we swap while doing the comparison,
+* it might affect the subsequent comparisons negatively.
+**/
+function updatePlacements(player: Player) {
+    let temp_placements: any = {};
+
+    for (const player of getActivePlayers()) {
+        temp_placements[player.name] = player.placement;
+    }
+
+    for (const opponent of getActivePlayers()) {
+
+        if (player === opponent) continue;
+
+        if (player.guesses!.length === opponent.guesses!.length) {
+
+            if (player.current_round_time! > opponent.current_round_time!
+                && temp_placements[player.name] < temp_placements[opponent.name]) {
+
+                const temp = temp_placements[player.name];
+                temp_placements[player.name] = temp_placements[opponent.name];
+                temp_placements[opponent.name] = temp;
+            }
+        }
+    }
+
+    for (const player of getActivePlayers()) {
+        player.placement = temp_placements[player.name];
+    }
+
 }
 
 // Sanitizer global state til kun den info som brugerne skal bruge
 function sanitize_global_state(): StateDTO {
 
-    //console.log('Beginning sanitation');
-
     for (const player of getPlayers()) {
-        if (player.guesses == null) {
+
+        if (player.guesses!.length == 0) {
             console.log(`No guesses from ${player.name}`)
             continue
         }
 
         // Virkelig cursed overfoersel af guesses til sanitized guesses.
-        // Kunne vaere at global sanitized state bare skulle opdateres hver gang global state opdateres med player guesses, but fuck it i guess. Nu er vi eksplicitte
         let sanitized_guesses: SanitizedGuess[] = [];
-        for (let i = 0; i < player.guesses.length; i++) {
+        for (let i = 0; i < player.guesses!.length; i++) {
 
-            //const guess = player.guesses[i];
-
-            //console.log(`Looping player ${player.name} guesses, which have ${player.guesses.length} guesses, currently at guess ${i}, which is ${JSON.stringify(guess)}`);
 
             sanitized_guesses[i] = {
                 // TODO: .map() i stedet for hardcoding
                 character_info: [
                     {
-                        //char1: player.guesses[i].character_info[0].char1,
-                        in_word: player.guesses[i].character_info[0].in_word,
-                        correct_idx: player.guesses[i].character_info[0].correct_idx,
+                        in_word: player.guesses![i].character_info[0].in_word,
+                        correct_idx: player.guesses![i].character_info[0].correct_idx,
                     },
 
                     {
-                        //char2: player.guesses[i].character_info[1].char2,
-                        in_word: player.guesses[i].character_info[1].in_word,
-                        correct_idx: player.guesses[i].character_info[1].correct_idx,
+                        in_word: player.guesses![i].character_info[1].in_word,
+                        correct_idx: player.guesses![i].character_info[1].correct_idx,
                     },
 
                     {
-                        //char3: player.guesses[i].character_info[2].char3,
-                        in_word: player.guesses[i].character_info[2].in_word,
-                        correct_idx: player.guesses[i].character_info[2].correct_idx,
+                        in_word: player.guesses![i].character_info[2].in_word,
+                        correct_idx: player.guesses![i].character_info[2].correct_idx,
                     },
 
                     {
-                        //char4: player.guesses[i].character_info[3].char4,
-                        in_word: player.guesses[i].character_info[3].in_word,
-                        correct_idx: player.guesses[i].character_info[3].correct_idx,
+                        in_word: player.guesses![i].character_info[3].in_word,
+                        correct_idx: player.guesses![i].character_info[3].correct_idx,
                     },
                     {
-                        //char5: player.guesses[i].character_info[4].char5,
-                        in_word: player.guesses[i].character_info[4].in_word,
-                        correct_idx: player.guesses[i].character_info[4].correct_idx,
+                        in_word: player.guesses![i].character_info[4].in_word,
+                        correct_idx: player.guesses![i].character_info[4].correct_idx,
                     }
 
                 ]
@@ -330,7 +381,10 @@ function sanitize_global_state(): StateDTO {
             has_lost: player.has_lost
         }
 
+
     };
+
+    sanitized_state.phase = global_state.phase;
 
     return sanitized_state;
 }
