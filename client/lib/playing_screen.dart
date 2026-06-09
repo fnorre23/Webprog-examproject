@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
-import 'game_types.dart';
 import 'player_processing.dart';
 
-import 'widgets/tile.dart';
 import 'widgets/keyboard.dart';
 import 'widgets/mini_board.dart';
+import 'widgets/wordle_board.dart';
 
 class GamePage extends StatefulWidget {
   final PlayerProcess playerProcess;
@@ -118,23 +117,6 @@ class _GamePageState extends State<GamePage> {
   // Her laver vi de 6 rækker til gæt
   @override
   Widget build(BuildContext context) {
-    const int maxRows = 6;
-
-    final boardRows = List.generate(maxRows, (rowIndex) {
-      if (rowIndex < widget.playerProcess.guesses.length) {
-        return widget.playerProcess.guesses[rowIndex];
-      }
-      if (rowIndex == widget.playerProcess.guesses.length) {
-        return _currentGuess
-            .map((char) => LetterInfo(char: char, type: null))
-            .toList();
-      }
-      return List.generate(
-        5,
-        (_) => LetterInfo(char: '', type: null),
-      );
-    });
-
     final minutes = _secondsLeft ~/ 60;
     final seconds = _secondsLeft % 60;
     final timerDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
@@ -158,18 +140,10 @@ class _GamePageState extends State<GamePage> {
                     child: Column(
                       children: [
                         const SizedBox(height: 100),
-                        for (var guess in boardRows)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (var i = 0; i < guess.length; i++)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 2.5, vertical: 2.5),
-                                  child: Tile(guess[i].char, guess[i].type,index: i),
-                                ),
-                            ],
-                          ),
+                        WordleBoard(
+                          guesses: widget.playerProcess.guesses,
+                          currentGuess: _currentGuess,
+                        ),
                         const SizedBox(height: 150),
                         Keyboard(
                           onLetter: widget.playerProcess.hasFinished ? (_) {} : _addLetter,

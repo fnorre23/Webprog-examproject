@@ -46,6 +46,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _timer?.cancel();
     widget.playerProcess.onStateUpdate = null;
     widget.playerProcess.onPhaseChange = null;
+    widget.playerProcess.onRoundReset = null;
     super.dispose();
   }
 
@@ -94,6 +95,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
     await showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Welcome'),
         content: TextField(
@@ -188,7 +190,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 widget.playerProcess.unready();
                                 _cancelCountdown();
                               },
-                              child: const Text('CANCEL', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
+                              child: const Text('CANCEL', style: TextStyle(fontSize: 30, color: Color.fromARGB(255, 255, 255, 255))),
                             )
                           : ElevatedButton(
                               style: ElevatedButton.styleFrom(
@@ -202,7 +204,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 setState(() => _isReady = true);
                                 widget.playerProcess.readyUp();
                               },
-                              child: const Text('READY', style: TextStyle(fontSize: 30, color: Color.fromARGB(200, 230, 230, 230))),
+                              child: const Text('READY', style: TextStyle(fontSize: 30, color: Color.fromARGB(255, 255, 255, 255))),
                             ),
                       SizedBox(
                         height: 40,
