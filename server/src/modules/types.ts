@@ -36,9 +36,11 @@ export interface Player {
     name: string,
     guesses: Guess[] | null,
     placement: number | null,
-    has_won_round: boolean
+    current_round_time_left: number | null,
     has_lost: boolean,
     is_ready: boolean,
+    has_won_round: boolean,
+    has_lost_round: boolean,
 }
 
 export interface SanitizedPlayer {
@@ -84,27 +86,22 @@ export interface Guess {
 export interface SanitizedGuess {
     character_info: [
         {
-            //char1: string,
             in_word: boolean,
             correct_idx: boolean,
         },
         {
-            //char2: string,
             in_word: boolean,
             correct_idx: boolean,
         },
         {
-            //char3: string,
             in_word: boolean,
             correct_idx: boolean,
         },
         {
-            //char4: string,
             in_word: boolean,
             correct_idx: boolean,
         },
         {
-            //char5: string,
             in_word: boolean,
             correct_idx: boolean,
         },

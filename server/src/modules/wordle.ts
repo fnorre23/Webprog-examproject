@@ -38,7 +38,6 @@ export async function setNewCorrectWord() {
 // Parser csv fil saa vi har valid words, og generer vi et correct ord fra vores word bank, om er alle ord der kan vaere de rigtige. 
 const validWords: string[] = await processWordsFile('./src/word-banks/valid-words.csv');
 export let correctWord: string = await getCorrectWord();
-console.log('The correct word for the round is: ' + correctWord);
 
 /**
  * Checks guess.
@@ -119,8 +118,6 @@ export function checkGuess(guess: any) {
         }
 
     }
-
-    // console.log(JSON.stringify(jsonResponse));
 
     return processedGuess;
 }
