@@ -2,8 +2,8 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'game_types.dart';
 
 class PlayerProcess {
-  final socket = io.io('http://localhost:3000', io.OptionBuilder()
-    .setTransports(['websocket', 'polling'])
+  final socket = io.io(Uri.base.origin, io.OptionBuilder()
+    .setTransports(['websocket'])
     .disableAutoConnect()
     .build());
 
