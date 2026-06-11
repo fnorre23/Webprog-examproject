@@ -24,6 +24,9 @@ class _GamePageState extends State<GamePage> {
   int _cursorPost = 0; // hvor vi er i gættet, altså hvor næste bogstav skal ind, eller hvor backspace skal fjerne fra
   int _secondsLeft = 120;
   Timer? _timer;
+  int? _roundCountdown;
+  Timer? _roundCountdownTimer;
+  bool _losingScreenShown = false;
   
   @override
   void initState() {
@@ -33,30 +36,63 @@ class _GamePageState extends State<GamePage> {
       setState(() {});
     };
     widget.playerProcess.onRoundReset = () {
+      _roundCountdownTimer?.cancel();
       setState(() {
         _secondsLeft = 120;
         _currentGuess = List.filled(5, '');
         _cursorPost = 0;
+        _roundCountdown = 3;
       });
-      _resetTimer();
+      _roundCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          if (_roundCountdown! > 1) {
+            _roundCountdown = _roundCountdown! - 1;
+          } else {
+            timer.cancel();
+            _roundCountdown = null;
+            _resetTimer();
+          }
+        });
+      });
     };
     _resetTimer();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
-    widget.playerProcess.onLost = () {
-      widget.onPlayerStateChange(PlayerState.spectating);
+    widget.playerProcess.onLostContext = (reason) {
+      if (!mounted || _losingScreenShown) return;
+      _losingScreenShown = true;
+      _showLosingScreen(reason);
     };
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _roundCountdownTimer?.cancel();
     _focusNode.dispose();
-    widget.playerProcess.onUpdate = null;
-    widget.playerProcess.onRoundReset = null;
-    widget.playerProcess.onLost = null;
+    widget.playerProcess.onLostContext = null;
     super.dispose();
+  }
+
+  void _showLosingScreen(String reason) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(reason),
+        content: const Text("You've lost! Spectate to continue"),
+        actions: [
+          TextButton(
+            child: const Text('Spectate'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              widget.onPlayerStateChange(PlayerState.spectating);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   void _resetTimer() {
@@ -108,6 +144,7 @@ class _GamePageState extends State<GamePage> {
   void _onKey(KeyEvent event) {
     if (event is! KeyDownEvent) return;
     if (widget.playerProcess.hasFinished) return;
+    if (_roundCountdown != null) return;
     final key = event.logicalKey;
 
     if (key == LogicalKeyboardKey.backspace) {
@@ -167,11 +204,13 @@ class _GamePageState extends State<GamePage> {
                 right: 0,
                 child: Center(
                   child: Text(
-                    timerDisplay,
-                    style: const TextStyle(fontSize: 50,fontWeight: FontWeight.bold),
+                    _roundCountdown != null
+                        ? 'Next round in $_roundCountdown...'
+                        : timerDisplay,
+                    style: const TextStyle(fontSize: 50, fontWeight: FontWeight.bold),
                   ),
                 )
-              )
+              ),
             ],
           ),
         ),
@@ -188,7 +227,7 @@ class _GamePageState extends State<GamePage> {
                   child: Text('Players', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                   for (final player in widget.playerProcess.otherPlayers.values)
-                    MiniBoard(player),               
+                    MiniBoard(player, isCountingDown: _roundCountdown != null),               
               ],
             ),
           ),

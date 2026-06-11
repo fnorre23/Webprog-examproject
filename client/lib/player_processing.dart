@@ -16,6 +16,7 @@ class PlayerProcess {
   bool hasFinished = false;
   bool hasLost = false;
   void Function()? onLost;
+  void Function(String reason)? onLostContext;
 
   PlayerProcess({this.onUpdate, this.onStateUpdate}) {
     socket.connect();
@@ -28,6 +29,11 @@ class PlayerProcess {
       final playersData = Map<String, dynamic>.from(data['players']);
       final players = playersData.map((id, player) => MapEntry(id, (player as Map)['name'] as String));
       onStateUpdate?.call(players);
+
+      final myData = playersData[socket.id];
+      if (myData != null && (myData as Map)['has_lost'] == true && !hasLost) {
+        hasLost = true;
+      }
 
       final phase = data['phase'] as String?;
       if (phase != null) {
@@ -50,12 +56,6 @@ class PlayerProcess {
         );
       }
 
-      final myData = playersData[socket.id];
-      if (myData !=null && (myData as Map)['has_lost'] == true && !hasLost) {
-        hasLost = true;
-        onLost?.call();
-      }
-
       otherPlayers = newOtherPlayers;
       onUpdate?.call();
     });
@@ -75,6 +75,22 @@ class PlayerProcess {
       hasFinished = false;
       hasLost = false;
       onRoundReset?.call();
+    });
+
+    socket.on('lost_timeout', (_) {
+      if (hasLost) return;
+      hasFinished = true;
+      hasLost = true;
+      onLostContext?.call('Time\'s up!');
+      onLost?.call();
+    });
+
+    socket.on('lost_incorrect_guesses', (_) {
+      if (hasLost) return;
+      hasFinished = true;
+      hasLost = true;
+      onLostContext?.call('Out of guesses!');
+      onLost?.call();
     });
 
   }

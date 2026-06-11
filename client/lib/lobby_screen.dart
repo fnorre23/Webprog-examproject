@@ -34,7 +34,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showDialogIfFirstLoaded();
     widget.playerProcess.onPhaseChange = (phase) {
-      if (phase == 'playing') _startCountdown();
+      if (phase == 'playing') {
+        if (widget.playerProcess.hasLost) {
+          widget.onPlayerStateChange(PlayerState.spectating);
+        } else {
+          _startCountdown();
+        }
+      }
     };
     });
   }
