@@ -10,16 +10,27 @@ TODO: Video
 
 ## Technologies ⚙️
 
-- React for frontend
+- Flutter for frontend
 
 - Node.js for backend
-
-- MongoDB for hosting wordbank and track records of players placements during games
 
 ## Running the project 🚗
 
 You can run this project locally to host for you and your
 friends.
+
+### With Docker
+
+Assuming you have docker installed, simply run the following commands:
+```bash
+git clone https://github.com/fnorre23/Webprog-examproject.git
+cd Webprog-examproject
+docker compose up
+```
+
+The site is then ava
+
+### Without Docker
 
 **Dependencies**
 You need the following software installed to run the project:

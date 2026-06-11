@@ -292,7 +292,6 @@ function nextRound() {
     setNewCorrectWord();
     placement_counter = 1;
 
-    // TODO: Start timer
 }
 
 // Helpers //////////////////////////////////////////
@@ -306,12 +305,6 @@ function getPlayerTotal() {
 }
 
 function getActivePlayers() {
-
-    // Debug logging
-    // for (const player of players) {
-    //     console.log(`Player ${player.name} has lost? ${player.has_lost}`);
-    // }
-
     return getPlayers().filter((player: Player) => !player.has_lost);
 }
 
