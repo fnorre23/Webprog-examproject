@@ -15,8 +15,11 @@ class PlayerProcess {
   List<List<LetterInfo>> guesses = [];
   bool hasFinished = false;
   bool hasLost = false;
-  void Function()? onLost;
   void Function(String reason)? onLostContext;
+  void Function()? onWon;
+  void Function(String winner)? onGameOver;
+  String? playerName;
+  List<String> gameHistory = [];
 
   PlayerProcess({this.onUpdate, this.onStateUpdate}) {
     socket.connect();
@@ -82,7 +85,6 @@ class PlayerProcess {
       hasFinished = true;
       hasLost = true;
       onLostContext?.call('Time\'s up!');
-      onLost?.call();
     });
 
     socket.on('lost_incorrect_guesses', (_) {
@@ -90,16 +92,27 @@ class PlayerProcess {
       hasFinished = true;
       hasLost = true;
       onLostContext?.call('Out of guesses!');
-      onLost?.call();
+    });
+
+    socket.on('game_over', (data) {
+      final winnerName = data as String;
+      gameHistory.add(winnerName);
+      if (winnerName == playerName) {
+        hasFinished = true;
+        onWon?.call();
+      } else {
+        onGameOver?.call(winnerName);
+      }
     });
 
   }
 
 
 
-  void joinGame(String playerName) {
-    socket.emit('join', playerName);
-      print('Player name sent: $playerName');
+  void joinGame(String name) {
+    playerName = name;
+    socket.emit('join', name);
+    print('Player name sent: $name');
   }
 
   void readyUp() {

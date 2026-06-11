@@ -28,8 +28,8 @@ class Tile extends StatelessWidget {
       child: Center(
         child: Text(
           letter.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 35,
+          style: TextStyle(
+            fontSize: size * 0.5,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),

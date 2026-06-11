@@ -30,18 +30,22 @@ class _LobbyScreenState extends State<LobbyScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.playerProcess.playerName != null) {
+      widget.playerProcess.joinGame(widget.playerProcess.playerName!);
+    }
     widget.playerProcess.onStateUpdate = (players) => setState(() => _players = players);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showDialogIfFirstLoaded();
     widget.playerProcess.onPhaseChange = (phase) {
+      if (!mounted) return;
       if (phase == 'playing') {
         if (widget.playerProcess.hasLost) {
           widget.onPlayerStateChange(PlayerState.spectating);
-        } else {
+        } else if (_isReady) {
           _startCountdown();
         }
       }
     };
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showDialogIfFirstLoaded();
     });
   }
 
@@ -50,6 +54,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _textEditingController.dispose();
     _focusNode.dispose();
     _timer?.cancel();
+    _isReady = false;
     widget.playerProcess.onStateUpdate = null;
     widget.playerProcess.onPhaseChange = null;
     super.dispose();
@@ -91,6 +96,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
 // Her er alt der har med pop-up navgivning af spilleren.
 
   Future<void> _showDialogIfFirstLoaded() async {
+    if (widget.playerProcess.playerName != null) return;
+
     final prefs = await SharedPreferences.getInstance();
     final String? storedName = prefs.getString(keyPlayerName);
 
@@ -162,13 +169,19 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         )
                       ]
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text('Last Game:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 8),
-                        Text('xxx', style: TextStyle(fontSize: 16)),
-
+                        const Text('Game History:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        if (widget.playerProcess.gameHistory.isEmpty)
+                          const Text('No game played yet', style: TextStyle(fontSize: 16))
+                        else
+                          for (int i = 0; i < widget.playerProcess.gameHistory.length; i++)
+                            Text(
+                              'Game ${i + 1}: ${widget.playerProcess.gameHistory[i]} won!',
+                              style: const TextStyle(fontSize: 16),
+                            ),
                       ],
                     ),
                   ),

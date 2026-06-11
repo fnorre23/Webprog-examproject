@@ -26,16 +26,19 @@ class _GamePageState extends State<GamePage> {
   Timer? _timer;
   int? _roundCountdown;
   Timer? _roundCountdownTimer;
-  bool _losingScreenShown = false;
-  
+  String? _lostReason;
+  bool _won = false;
+
   @override
   void initState() {
     super.initState();
     widget.playerProcess.onUpdate = () {
+      if (!mounted) return;
       if (widget.playerProcess.hasFinished) _timer?.cancel();
       setState(() {});
     };
     widget.playerProcess.onRoundReset = () {
+      if (!mounted) return;
       _roundCountdownTimer?.cancel();
       setState(() {
         _secondsLeft = 120;
@@ -60,9 +63,16 @@ class _GamePageState extends State<GamePage> {
       _focusNode.requestFocus();
     });
     widget.playerProcess.onLostContext = (reason) {
-      if (!mounted || _losingScreenShown) return;
-      _losingScreenShown = true;
-      _showLosingScreen(reason);
+      if (!mounted || _lostReason != null) return;
+      setState(() => _lostReason = reason);
+    };
+    widget.playerProcess.onWon = () {
+      if (!mounted || _won) return;
+      setState(() => _won = true);
+    };
+    widget.playerProcess.onGameOver = (winner) {
+      if (!mounted) return;
+      widget.onPlayerStateChange(PlayerState.lobby);
     };
   }
 
@@ -72,27 +82,8 @@ class _GamePageState extends State<GamePage> {
     _roundCountdownTimer?.cancel();
     _focusNode.dispose();
     widget.playerProcess.onLostContext = null;
+    widget.playerProcess.onWon = null;
     super.dispose();
-  }
-
-  void _showLosingScreen(String reason) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(reason),
-        content: const Text("You've lost! Spectate to continue"),
-        actions: [
-          TextButton(
-            child: const Text('Spectate'),
-            onPressed: () {
-              Navigator.of(context).pop();
-              widget.onPlayerStateChange(PlayerState.spectating);
-            },
-          ),
-        ],
-      ),
-    );
   }
 
   void _resetTimer() {
@@ -143,7 +134,7 @@ class _GamePageState extends State<GamePage> {
   // LogicalKeyboardKey er noget Flutter hejs, der gør vi kan bruge computerens keyboard
   void _onKey(KeyEvent event) {
     if (event is! KeyDownEvent) return;
-    if (widget.playerProcess.hasFinished) return;
+    if (widget.playerProcess.hasFinished || _won || _lostReason != null) return;
     if (_roundCountdown != null) return;
     final key = event.logicalKey;
 
@@ -164,8 +155,10 @@ class _GamePageState extends State<GamePage> {
     final seconds = _secondsLeft % 60;
     final timerDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
-    return Row(
+    return Stack(
       children: [
+        Row(
+          children: [
 
         const SizedBox(width: 160),
 
@@ -227,12 +220,66 @@ class _GamePageState extends State<GamePage> {
                   padding: EdgeInsets.all(8),
                   child: Text('Players', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  for (final player in widget.playerProcess.otherPlayers.values)
-                    MiniBoard(player, isCountingDown: _roundCountdown != null),               
+                  for (final entry in widget.playerProcess.otherPlayers.entries)
+                    MiniBoard(entry.value, key: ValueKey(entry.key), isCountingDown: _roundCountdown != null),               
               ],
             ),
           ),
         ),
+          ],
+        ),
+        if (_lostReason != null)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black54,
+              child: Center(
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_lostReason!, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        const Text("You've lost!", style: TextStyle(fontSize: 18)),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => widget.onPlayerStateChange(PlayerState.spectating),
+                          child: const Text('Spectate'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (_won)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black54,
+              child: Center(
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('You won!', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        const Text('Congratulations!', style: TextStyle(fontSize: 18)),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => widget.onPlayerStateChange(PlayerState.lobby),
+                          child: const Text('Back to lobby'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

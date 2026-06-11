@@ -48,8 +48,7 @@ class _MainAppState extends State<MainApp> {
       case PlayerState.playing:
         body = GamePage(playerProcess: _playerProcess, onPlayerStateChange: _setPlayerState);
       case PlayerState.spectating:
-        body = SpectatingScreen(playerProcess: _playerProcess);
-        break;
+        body = SpectatingScreen(playerProcess: _playerProcess, onPlayerStateChange: _setPlayerState);
     }
 // Viser bare appbar og body igennem alle states
     return MaterialApp(

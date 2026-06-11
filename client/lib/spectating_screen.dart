@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'game_types.dart';
+import 'main.dart';
 import 'player_processing.dart';
 import 'widgets/tile.dart';
 
 class SpectatingScreen extends StatefulWidget {
   final PlayerProcess playerProcess;
-  const SpectatingScreen({super.key, required this.playerProcess});
+  final void Function(PlayerState) onPlayerStateChange;
+  const SpectatingScreen({super.key, required this.playerProcess, required this.onPlayerStateChange});
 
   @override
   State<SpectatingScreen> createState() => _SpectatingScreenState();
@@ -17,12 +19,17 @@ class _SpectatingScreenState extends State<SpectatingScreen> {
     super.initState();
     widget.playerProcess.onUpdate = () => setState(() {});
     widget.playerProcess.onRoundReset = () => setState(() {});
+    widget.playerProcess.onGameOver = (winner) {
+      if (!mounted) return;
+      widget.onPlayerStateChange(PlayerState.lobby);
+    };
   }
 
   @override
   void dispose() {
     widget.playerProcess.onUpdate = null;
     widget.playerProcess.onRoundReset = null;
+    widget.playerProcess.onGameOver = null;
     super.dispose();
   }
 
