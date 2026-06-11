@@ -50,6 +50,7 @@
     "noEmitOnError": true, 
     "esModuleInterop": true, // noget der goer vi kan compile vores server 
     "noUncheckedIndexedAccess": false, // ellers skal vi tjekke et output hver gang vi indexer et array 
+    "allowImportingTsExtensions": true,
 
   }
 }
