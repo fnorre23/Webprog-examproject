@@ -4,20 +4,12 @@
 const PHASE = {
     LOBBY: 'lobby',
     PLAYING: 'playing',
-    SPECTATING: 'spectating',
 } as const;
 
 export type Phase = (typeof PHASE)[keyof typeof PHASE];
 
 export { PHASE };
 
-const PlayerPhase = {
-    LOBBY: 'lobby',
-    PLAYING: 'playing',
-    SPECTATING: 'spectating',
-} as const;
-
-export type PlayerPhase = (typeof PlayerPhase)[keyof typeof PlayerPhase];
 export interface State {
     phase: Phase,
     players: Record<string, Player>,

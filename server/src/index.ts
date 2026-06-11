@@ -9,7 +9,7 @@ import { PHASE } from './modules/types.ts';
 // Server setup
 // Express bliver teknisk set ikke brugt, men er fin praksis at have just in case
 const app = express();
-const PORT: number = 8080;
+const PORT: number = 3000;
 const server = http.createServer(app);
 const io = new Server(server, {}); // IO haandterer websockets, og definerer derfor selv CORS
 
@@ -255,6 +255,8 @@ function nextRound() {
             console.log(`${player.name} lost this round because they were worse`);
             player.has_lost = true;
             player.guesses = [];
+            if (player.has_won_round)
+                io.to(player.socket_id).emit('lost_since_worse');
             continue;
         }
 
@@ -268,8 +270,16 @@ function nextRound() {
     // getActivePlayers igen
     active_players = active_players.filter(player => !player.has_lost);
 
+    // Hvis der kun er en spiller tilbage, så tjekker vi vinder og resetter
+    // Uanset hvad, så hvis der kun er 1 spiller skal vi starte forfra
     if (active_players.length <= 1) {
         checkWinner();
+
+        // Resets for next round
+        for (const player of getPlayers()) {
+            player.has_lost = false
+        }
+        io.emit('state', sanitize_global_state());
         return;
     }
 
@@ -303,32 +313,35 @@ function getActivePlayers() {
 function checkWinner() {
     const winner = getActivePlayers()[0];
 
-    // Mest til debug naar man er 1 spiller og skal proeve en runde
-    // burde ikke vaere relevant i et rigtigt use case
-    if (winner.placement === 0) {
+    if (winner === undefined) {
+        console.log('Idfk, noget weird er sket');
+        global_state.phase = PHASE.LOBBY;
+        io.emit('state', sanitize_global_state());
+        return;
+    }
 
-        console.log('a little early to have won!')
-
-    } else if (winner.has_lost) {
+    if (winner.has_lost) {
 
         console.log("No winner this round...");
 
         io.emit('game_over_no_winner', winner.name);
         global_state.phase = PHASE.LOBBY;
         io.emit('state', sanitize_global_state());
+        return;
+    }
 
+
+    // Mest til debug naar man er 1 spiller og skal proeve en runde
+    // burde ikke vaere relevant i et rigtigt use case
+    if (winner.placement === 0) {
+        console.log('a little early to have won!')
     } else {
         console.log(`The winner is: ${winner.name}`);
 
         io.emit('game_over', winner.name)
         global_state.phase = PHASE.LOBBY;
-        io.emit('state', sanitize_global_state());
     }
 
-    // Resets for next round
-    for (const player of getPlayers()) {
-        player.has_lost = false
-    }
 }
 
 /**

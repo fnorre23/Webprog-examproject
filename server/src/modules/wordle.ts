@@ -52,6 +52,7 @@ export function checkGuess(guess: any) {
         guess: guess,
         was_correct: false,
         is_valid: true,
+        // TODO: .map()
         character_info: [
             {
                 char: guess[0],
@@ -102,9 +103,9 @@ export function checkGuess(guess: any) {
 
     // Checking all letters against the correct word
     for (let i = 0; i < guess.length; i++) {
-        const letter = guess[i];
+        const letter = processedGuess.character_info[i].char;
 
-        if (letter == correctWord[i]) {
+        if (letter === correctWord[i]) {
 
             processedGuess.character_info[i].in_word = true;
             processedGuess.character_info[i].correct_idx = true;
