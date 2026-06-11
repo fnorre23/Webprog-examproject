@@ -1,68 +1,28 @@
-/* csv shit https://csv.js.org/parse/examples/async_iterator/ */
-import { checkGuess, setNewCorrectWord } from './modules/wordle.ts';
 import { Server } from 'socket.io';
 import http from 'http';
-import type { Player, State, Phase, SanitizedGuess, SanitizedPlayer, StateDTO } from './modules/types.ts';
+import express from "express"; // Server setup https://www.geeksforgeeks.org/node-js/how-to-create-a-simple-server-using-express-js/
 
-// Server setup https://www.geeksforgeeks.org/node-js/how-to-create-a-simple-server-using-express-js/
-import express from "express";
+import type { Player, State, Phase, SanitizedGuess, StateDTO } from './modules/types.ts';
+import { checkGuess, setNewCorrectWord } from './modules/wordle.ts';
+import { PHASE } from './modules/types.ts';
 
 // Server setup
+// Express bliver teknisk set ikke brugt, men er fin praksis at have just in case
 const app = express();
 const PORT: number = 8080;
-
 const server = http.createServer(app);
-
-// IO haandterer websockets, og definerer derfor selv CORS shit
-const io = new Server(server, {
-    cors: {
-        origin: '*',
-        methods: [
-            'GET',
-            'POST',
-            // 'PUT',
-            // 'DELETE',
-        ],
-        allowedHeaders: [
-            'Origin',
-            'X-Requested-With',
-            'Content-Type',
-            'Accept',
-        ]
-    }
-});
+const io = new Server(server, {}); // IO haandterer websockets, og definerer derfor selv CORS
 
 // Parse requests
 app.use(express.text());
-
-// CORS settings til almene HTTP methods
-// TODO: skal måske slettes
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With,Content-Type, Accept');
-    next();
-});
-
-//testing requests
-app.get('/', (req, res) => {
-    res.send('<h1>Hello, Geeks!</h1><p>This is your simple Express server.</p>');
-});
-
-// app.post('/', (req, res) => {
-//     let jsonResponse = checkGuess(req.body);
-//     res.send(jsonResponse);
-// })
 
 server.listen(PORT, () => {
     console.log(`Server is listening at http://localhost:${PORT}`);
 });
 
-
-
 // GLOBAL STATE ////////////////
 
-let phase: Phase = 'lobby';
+let phase: Phase = PHASE.LOBBY;
 
 const global_state: State = {
     phase: phase,
@@ -90,28 +50,29 @@ io.on('connection', (socket) => {
     socket.on('join', (name) => {
         global_state.players[socket.id] = {
             socket_id: socket.id,
-            name: name.trim() || 'Player',
+            name: name.trim() || 'Anonymous Player',
             has_won_round: false,
             guesses: [],
             placement: 0,
             has_lost: false,
+            has_lost_round: false,
             is_ready: false,
             current_round_time_left: 0,
         }
 
-        console.log(`Player ${global_state.players[socket.id].name} joined the lobby with a name`);
+        console.log(`Player ${global_state.players[socket.id].name} joined the lobby`);
 
         // Hvis de joiner en eksisterende lobby, saa har de allerede tabt
-        if (global_state.phase == 'playing') {
+        if (global_state.phase == PHASE.PLAYING) {
             global_state.players[socket.id].has_lost = true;
         }
 
         io.emit('state', sanitize_global_state())
-
     });
 
     socket.on('ready_up', () => {
-        let player = global_state.players[socket.id];
+        const player = global_state.players[socket.id];
+
         if (player === undefined || player === null) {
             console.log("Rogue mf proever at vaere med");
             return;
@@ -127,35 +88,25 @@ io.on('connection', (socket) => {
             }
         }
 
-        global_state.phase = 'playing';
+        global_state.phase = PHASE.PLAYING;
         nextRound();
         io.emit('state', sanitize_global_state());
     });
 
     socket.on('unready', () => {
-        let player = global_state.players[socket.id];
+        const player = global_state.players[socket.id];
         if (player === undefined || player === null) {
             console.log("Rogue mf proever at vaere med");
             return;
         }
         player.is_ready = false;
-        global_state.phase = 'lobby';
+        global_state.phase = PHASE.LOBBY;
         io.emit('state', sanitize_global_state());
     })
 
     socket.on('guess', (data) => {
 
-        let guess = data['guess'];
-        const time_left = data['time_left'];
-
-        if (typeof guess !== "string") {
-            console.log("not a string!");
-            console.log(guess)
-            return;
-        }
-
-        let player = global_state.players[socket.id]
-        guess = guess.toLowerCase();
+        const player = global_state.players[socket.id]
 
         if (player === undefined || player === null) {
             console.log("Rogue mf proever at vaere med");
@@ -166,12 +117,23 @@ io.on('connection', (socket) => {
             return;
         }
 
+        let guess = data['guess'];
+        const time_left = data['time_left'];
+
+        if (typeof guess !== "string") {
+            console.log("not a string!");
+            console.log(guess)
+            return;
+        }
+
+        guess = guess.toLowerCase();
+
         console.log(`Received guess: ${guess} from ${player.name}`);
 
         const processedGuess = checkGuess(guess)
 
         // Hvis det ikke er validt, saa stoppper vi med det samme og sender bare tilbage. 
-        // Ingen state opdatering
+        // Ingen state opdatering, da kun spilleren skal vide de ikke kan gaette det
         if (!processedGuess.is_valid) {
             socket.emit('guess_validation', processedGuess);
             return;
@@ -188,7 +150,6 @@ io.on('connection', (socket) => {
             placement_counter++;
 
             updatePlacements(player);
-
         }
 
         if (!processedGuess.was_correct && player.guesses!.length >= 6) {
@@ -197,10 +158,7 @@ io.on('connection', (socket) => {
             socket.emit('lost_incorrect_guesses');
         }
 
-        // Sender svar tilbage
         socket.emit('guess_validation', processedGuess);
-
-        // Update info for alle
         io.emit('state', sanitize_global_state());
 
         // Tjekker om alle har svaret
@@ -209,8 +167,6 @@ io.on('connection', (socket) => {
                 if (player.has_lost_round) {
                     continue;
                 }
-
-                //console.log(`${player.name} has not won round, but they are not out yet! We continue playing`);
                 return;
             }
         }
@@ -223,16 +179,26 @@ io.on('connection', (socket) => {
     });
 
     socket.on('timed_out', () => {
-        let player = global_state.players[socket.id];
+        const player = global_state.players[socket.id];
 
         if (player === undefined || player === null) {
             console.log("Rogue mf proever at vaere med");
             return;
         }
 
-        player.has_lost_round = true;
-        console.log(`${player.name} lost round due to timing out`);
-        socket.emit('lost_timeout');
+        console.log(`${player.name} timed out! Time to fuck all`)
+
+        for (const player of getActivePlayers()) {
+            if (!player.has_won_round) {
+                player.has_lost_round = true;
+                console.log(`${player.name} lost round due to timing out`);
+                io.to(player.socket_id).emit('lost_timeout');
+            }
+        }
+
+        nextRound();
+        io.emit('next_round')
+        io.emit('state', sanitize_global_state());
     })
 
     socket.on('disconnect', () => {
@@ -241,6 +207,13 @@ io.on('connection', (socket) => {
         if (global_state.players[socket.id] !== null)
             delete global_state.players[socket.id];
 
+        // Hvis der ikke er nogen aktive spillere tilbage, saa skal vi bare til lobby
+        if (getActivePlayers().length === 0) {
+            global_state.phase = PHASE.LOBBY;
+            io.emit('state', sanitize_global_state());
+        }
+
+        io.emit('active_players_disconnected');
         io.emit('state', sanitize_global_state());
     });
 
@@ -267,18 +240,17 @@ function nextRound() {
         midpoint_placement = 1;
     }
 
-
     for (const player of active_players) {
 
         if (player.has_lost_round) {
             player.has_lost = true;
-
         }
 
         //console.log(`Midpoint for this round: ${midpoint_placement}`);
 
         // Hvis de er i bottom half, har de tabt. 
         // Vi tjekker for 0, da foerste runde starter de alle paa 0
+        // Resetter ogsaa deres stats, saa de ikke viser sig for de andre
         if (player.placement! > midpoint_placement && player.placement != 0) {
             console.log(`${player.name} lost this round because they were worse`);
             player.has_lost = true;
@@ -304,6 +276,8 @@ function nextRound() {
     // Resetter ord og placement counter til ny runde
     setNewCorrectWord();
     placement_counter = 1;
+
+    // TODO: Start timer
 }
 
 // Helpers //////////////////////////////////////////
@@ -318,17 +292,12 @@ function getPlayerTotal() {
 
 function getActivePlayers() {
 
-    const players = getPlayers();
+    // Debug logging
+    // for (const player of players) {
+    //     console.log(`Player ${player.name} has lost? ${player.has_lost}`);
+    // }
 
-    let active_players = [];
-
-    for (const player of players) {
-        console.log(`Player ${player.name} has lost? ${player.has_lost}`);
-        if (!player.has_lost) {
-            active_players.push(player);
-        }
-    }
-    return active_players;
+    return getPlayers().filter((player: Player) => !player.has_lost);
 }
 
 function checkWinner() {
@@ -345,14 +314,14 @@ function checkWinner() {
         console.log("No winner this round...");
 
         io.emit('game_over_no_winner', winner.name);
-        global_state.phase = 'lobby';
+        global_state.phase = PHASE.LOBBY;
         io.emit('state', sanitize_global_state());
 
     } else {
         console.log(`The winner is: ${winner.name}`);
 
         io.emit('game_over', winner.name)
-        global_state.phase = 'lobby';
+        global_state.phase = PHASE.LOBBY;
         io.emit('state', sanitize_global_state());
     }
 
@@ -398,12 +367,6 @@ function updatePlacements(player: Player) {
     for (const player of active_players) {
         player.placement = temp_placements[player.name];
     }
-
-    // console.log(`Current placements:`)
-    // for (const player of getActivePlayers()) {
-    //     console.log(`Player ${player.name} placement ${player.placement}`);
-    // }
-
 }
 
 // Sanitizer global state til kun den info som brugerne skal bruge
@@ -415,48 +378,16 @@ function sanitize_global_state(): StateDTO {
 
     for (const player of getPlayers()) {
 
-        // if (player.guesses!.length == 0) {
-        //     // console.log(`No guesses yet from ${player.name}`)
-        //     continue;
-        // }
-
-        // Virkelig cursed overfoersel af guesses til sanitized guesses.
         let sanitized_guesses: SanitizedGuess[] = [];
-        for (let i = 0; i < player.guesses!.length; i++) {
 
-
-            sanitized_guesses[i] = {
-                // TODO: .map() i stedet for hardcoding
-                character_info: [
-                    {
-                        in_word: player.guesses![i].character_info[0].in_word,
-                        correct_idx: player.guesses![i].character_info[0].correct_idx,
-                    },
-
-                    {
-                        in_word: player.guesses![i].character_info[1].in_word,
-                        correct_idx: player.guesses![i].character_info[1].correct_idx,
-                    },
-
-                    {
-                        in_word: player.guesses![i].character_info[2].in_word,
-                        correct_idx: player.guesses![i].character_info[2].correct_idx,
-                    },
-
-                    {
-                        in_word: player.guesses![i].character_info[3].in_word,
-                        correct_idx: player.guesses![i].character_info[3].correct_idx,
-                    },
-                    {
-                        in_word: player.guesses![i].character_info[4].in_word,
-                        correct_idx: player.guesses![i].character_info[4].correct_idx,
-                    }
-
-                ]
-            }
-        };
-
-
+        // Fik hjaelp med at forstaa map() fra claude her
+        sanitized_guesses = player.guesses!.map((guess) => ({
+            character_info: guess.character_info.map(({ char, correct_idx, in_word }) => ({
+                char,
+                correct_idx,
+                in_word,
+            }))
+        }));
 
         sanitized_state.players[player.socket_id] = {
             name: player.name,
@@ -471,30 +402,3 @@ function sanitize_global_state(): StateDTO {
 
     return sanitized_state;
 }
-
-
-
-
-
-
-////////////////////////////////////////////////////
-
-// Import til at skrive via cli for debugging
-// import * as readline from 'node:readline/promises';
-// import { stdin as input, stdout as output } from 'node:process';
-// import fs from 'fs';
-
-/* DEBUGGING IN THE CLI */
-// const rl = readline.createInterface({ input, output });
-// const guess: string = await rl.question('Guess a word: ');
-// rl.close();
-//
-// let api_response = checkGuess(guess);
-//
-// fs.writeFile('guess.json', api_response, (err) => {
-//     if (err) {
-//         console.log('Error writing file:', err);
-//     } else {
-//         console.log('Successfully wrote file');
-///     }
-// });
