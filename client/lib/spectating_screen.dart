@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'game_types.dart';
 import 'player_processing.dart';
+import 'widgets/tile.dart';
 
 class SpectatingScreen extends StatefulWidget {
   final PlayerProcess playerProcess;
@@ -76,20 +77,11 @@ class _SpectatorBoard extends StatelessWidget {
                 for (int col = 0; col < 5; col++)
                   Padding(
                     padding: const EdgeInsets.only(right: 4),
-                    child: Container(
-                      width: tileSize,
-                      height: tileSize,
-                      decoration: BoxDecoration(
-                        color: row < player.guesses.length
-                            ? switch (player.guesses[row][col].type) {
-                                HitType.hit => Colors.green,
-                                HitType.partial => Colors.yellow.shade700,
-                                HitType.miss => Colors.grey,
-                                null => Colors.grey.shade300,
-                              }
-                            : Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                    child: Tile(
+                      row < player.guesses.length ? player.guesses[row][col].char : '',
+                      row < player.guesses.length ? player.guesses[row][col].type : null,
+                      index: row * 5 + col,
+                      size: tileSize,
                     ),
                   ),
               ],

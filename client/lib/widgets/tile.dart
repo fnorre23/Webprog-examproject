@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import '../game_types.dart';
 
 class Tile extends StatelessWidget {
-  const Tile(this.letter, this.hitType, {super.key,required this.index});
+  const Tile(this.letter, this.hitType, {super.key, required this.index, this.size = 70});
 
   final String letter;
   final HitType? hitType;
   final int index;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     final container = AnimatedContainer(
       duration: Duration(milliseconds: 500),
       curve: Curves.bounceIn,
-      height: 70,
-      width: 70,
+      height: size,
+      width: size,
       decoration: BoxDecoration(
         border: Border.all(color: letter.isNotEmpty ? Colors.grey.shade900 : Colors.grey.shade400),
         color: switch (hitType) {

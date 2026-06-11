@@ -218,7 +218,8 @@ class _GamePageState extends State<GamePage> {
 
         Container(
           width: 160,
-          color: Colors.grey.shade100,
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(color: Colors.grey.shade100),
           child: SingleChildScrollView(
             child: Column(
               children: [
