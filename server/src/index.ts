@@ -1,20 +1,25 @@
 import { Server } from 'socket.io';
 import http from 'http';
 import express from "express"; // Server setup https://www.geeksforgeeks.org/node-js/how-to-create-a-simple-server-using-express-js/
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 import type { Player, State, Phase, SanitizedGuess, StateDTO } from './modules/types.ts';
 import { checkGuess, setNewCorrectWord } from './modules/wordle.ts';
 import { PHASE } from './modules/types.ts';
 
 // Server setup
-// Express bliver teknisk set ikke brugt, men er fin praksis at have just in case
 const app = express();
-const PORT: number = 3000;
+const PORT: number = 8080;
 const server = http.createServer(app);
 const io = new Server(server, {}); // IO haandterer websockets, og definerer derfor selv CORS
 
-// Parse requests
+
+// Setup til at serve vores flutter build
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 app.use(express.text());
+app.use(express.static(join(__dirname, '../../client/build/web')));
 
 server.listen(PORT, () => {
     console.log(`Server is listening at http://localhost:${PORT}`);

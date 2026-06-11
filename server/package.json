@@ -1,10 +1,10 @@
 {
-  "name": "examproject",
-  "version": "1.0.0",
+  "name": "wordle-battle-royale",
+  "version": "0.1.0",
   "description": "A Wordle Battle Royale! Compete against your friends in a battle of the fewest guesses. But don't be too slow! Having the same amount of guesses result in a time tie.",
   "repository": {
     "type": "git",
-    "url": "ssh://git@codeberg.org/fredlaust/WebProg-Examproject.git"
+    "url": "https://github.com/fnorre23/Webprog-examproject.git"
   },
   "license": "ISC",
   "author": "",
