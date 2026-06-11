@@ -170,6 +170,15 @@ io.on('connection', (socket) => {
 
         const processedGuess = checkGuess(guess)
 
+        // Hvis det ikke er validt, saa stoppper vi med det samme og sender bare tilbage. 
+        // Ingen state opdatering
+        if (!processedGuess.is_valid) {
+            socket.emit('guess_validation', processedGuess);
+            return;
+        }
+
+        // Alt herefter antager at guess er valid
+
         player.guesses!.push(processedGuess);
 
         if (processedGuess.was_correct) {
@@ -215,6 +224,12 @@ io.on('connection', (socket) => {
 
     socket.on('timed_out', () => {
         let player = global_state.players[socket.id];
+
+        if (player === undefined || player === null) {
+            console.log("Rogue mf proever at vaere med");
+            return;
+        }
+
         player.has_lost_round = true;
         console.log(`${player.name} lost round due to timing out`);
         socket.emit('lost_timeout');
@@ -234,6 +249,8 @@ io.on('connection', (socket) => {
 // Clean up til naeste runde + vi sender til alle at det er naeste runde
 function nextRound() {
 
+    let active_players = getActivePlayers();
+
     // Hvis spillere er over midpoint, saa skal de tabe, 
     // da en stoerre plads er skidt. 1 er bedst, 100 er vaerst
     //
@@ -241,18 +258,21 @@ function nextRound() {
     // saa vi har en lige maengde mennesker tilbage til naeste runde
     //
     // Paa skala, soerger vi for der altid kun er 2 i finalen
-    let midpoint_placement = Math.round(getActivePlayersTotal()) / 2
+
+    let midpoint_placement = Math.round(active_players.length / 2);
     if (midpoint_placement % 2 === 1) midpoint_placement++;
 
     // Edge case, kun 2 spillere tilbage
-    if (getActivePlayersTotal() === 2) {
+    if (active_players.length === 2) {
         midpoint_placement = 1;
     }
 
-    for (const player of getActivePlayers()) {
+
+    for (const player of active_players) {
 
         if (player.has_lost_round) {
             player.has_lost = true;
+
         }
 
         //console.log(`Midpoint for this round: ${midpoint_placement}`);
@@ -272,7 +292,11 @@ function nextRound() {
         player.guesses = [];
     }
 
-    if (getActivePlayersTotal() < 2) {
+    // Filtrerer dem der lige har tabt fra, i stedet for at kalde
+    // getActivePlayers igen
+    active_players = active_players.filter(player => !player.has_lost);
+
+    if (active_players.length <= 1) {
         checkWinner();
         return;
     }
@@ -299,17 +323,12 @@ function getActivePlayers() {
     let active_players = [];
 
     for (const player of players) {
-        // console.log(`Player ${player.name} has lost? ${player.has_lost}`);
+        console.log(`Player ${player.name} has lost? ${player.has_lost}`);
         if (!player.has_lost) {
             active_players.push(player);
         }
     }
     return active_players;
-}
-
-function getActivePlayersTotal() {
-    const active_players = getActivePlayers();
-    return active_players.length;
 }
 
 function checkWinner() {
@@ -354,11 +373,13 @@ function checkWinner() {
 function updatePlacements(player: Player) {
     let temp_placements: any = {};
 
-    for (const player of getActivePlayers()) {
+    const active_players = getActivePlayers();
+
+    for (const player of active_players) {
         temp_placements[player.name] = player.placement;
     }
 
-    for (const opponent of getActivePlayers()) {
+    for (const opponent of active_players) {
 
         if (player === opponent) continue;
 
@@ -374,7 +395,7 @@ function updatePlacements(player: Player) {
         }
     }
 
-    for (const player of getActivePlayers()) {
+    for (const player of active_players) {
         player.placement = temp_placements[player.name];
     }
 
@@ -388,12 +409,16 @@ function updatePlacements(player: Player) {
 // Sanitizer global state til kun den info som brugerne skal bruge
 function sanitize_global_state(): StateDTO {
 
+    // Clear last state
+
+    sanitized_state.players = {};
+
     for (const player of getPlayers()) {
 
-        if (player.guesses!.length == 0) {
-            // console.log(`No guesses yet from ${player.name}`)
-            continue;
-        }
+        // if (player.guesses!.length == 0) {
+        //     // console.log(`No guesses yet from ${player.name}`)
+        //     continue;
+        // }
 
         // Virkelig cursed overfoersel af guesses til sanitized guesses.
         let sanitized_guesses: SanitizedGuess[] = [];
