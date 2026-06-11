@@ -1,14 +1,15 @@
 
 // TYPES ////////////////////////////////////////
 // Enum alternative
-const Phase = {
+const PHASE = {
     LOBBY: 'lobby',
     PLAYING: 'playing',
     SPECTATING: 'spectating',
 } as const;
 
-// TODO: Hvorfor er det saadan her?
-export type Phase = (typeof Phase)[keyof typeof Phase];
+export type Phase = (typeof PHASE)[keyof typeof PHASE];
+
+export { PHASE };
 
 const PlayerPhase = {
     LOBBY: 'lobby',
@@ -82,29 +83,11 @@ export interface Guess {
     ]
 }
 
-// TODO: Omskriv til at vaere en derived type fra Guess
 export interface SanitizedGuess {
-    character_info: [
-        {
-            in_word: boolean,
-            correct_idx: boolean,
-        },
-        {
-            in_word: boolean,
-            correct_idx: boolean,
-        },
-        {
-            in_word: boolean,
-            correct_idx: boolean,
-        },
-        {
-            in_word: boolean,
-            correct_idx: boolean,
-        },
-        {
-            in_word: boolean,
-            correct_idx: boolean,
-        },
-    ]
+    character_info:
+    {
+        char: string,
+        in_word: boolean,
+        correct_idx: boolean,
+    }[]
 }
-
