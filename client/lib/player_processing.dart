@@ -14,6 +14,8 @@ class PlayerProcess {
   Map<String, OtherPlayerState> otherPlayers = {};
   List<List<LetterInfo>> guesses = [];
   bool hasFinished = false;
+  bool hasLost = false;
+  void Function()? onLost;
 
   PlayerProcess({this.onUpdate, this.onStateUpdate}) {
     socket.connect();
@@ -47,6 +49,13 @@ class PlayerProcess {
           hasLost: player['has_lost'] as bool? ?? false,
         );
       }
+
+      final myData = playersData[socket.id];
+      if (myData !=null && (myData as Map)['has_lost'] == true && !hasLost) {
+        hasLost = true;
+        onLost?.call();
+      }
+
       otherPlayers = newOtherPlayers;
       onUpdate?.call();
     });
@@ -64,6 +73,7 @@ class PlayerProcess {
     socket.on('next_round', (_) {
       guesses.clear();
       hasFinished = false;
+      hasLost = false;
       onRoundReset?.call();
     });
 

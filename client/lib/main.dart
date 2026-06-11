@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 
 import 'playing_screen.dart';
 import 'lobby_screen.dart';
+import 'spectating_screen.dart';
 import 'player_processing.dart';
+
 
 
 void main() {
@@ -44,9 +46,9 @@ class _MainAppState extends State<MainApp> {
       case PlayerState.lobby:
         body = LobbyScreen(playerProcess: _playerProcess, onPlayerStateChange: _setPlayerState);
       case PlayerState.playing:
-        body = GamePage(playerProcess: _playerProcess);
+        body = GamePage(playerProcess: _playerProcess, onPlayerStateChange: _setPlayerState);
       case PlayerState.spectating:
-        body = const Text('Spectating Screen');
+        body = SpectatingScreen(playerProcess: _playerProcess);
         break;
     }
 // Viser bare appbar og body igennem alle states

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
+import 'main.dart';
 import 'player_processing.dart';
 
 import 'widgets/keyboard.dart';
@@ -9,8 +10,9 @@ import 'widgets/mini_board.dart';
 import 'widgets/wordle_board.dart';
 
 class GamePage extends StatefulWidget {
+  final void Function(PlayerState) onPlayerStateChange;
   final PlayerProcess playerProcess;
-  const GamePage({super.key, required this.playerProcess});
+  const GamePage({super.key, required this.playerProcess, required this.onPlayerStateChange});
 
   @override
   State<GamePage> createState() => _GamePageState();
@@ -42,6 +44,9 @@ class _GamePageState extends State<GamePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
+    widget.playerProcess.onLost = () {
+      widget.onPlayerStateChange(PlayerState.spectating);
+    };
   }
 
   @override
@@ -50,6 +55,7 @@ class _GamePageState extends State<GamePage> {
     _focusNode.dispose();
     widget.playerProcess.onUpdate = null;
     widget.playerProcess.onRoundReset = null;
+    widget.playerProcess.onLost = null;
     super.dispose();
   }
 

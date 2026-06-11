@@ -46,7 +46,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _timer?.cancel();
     widget.playerProcess.onStateUpdate = null;
     widget.playerProcess.onPhaseChange = null;
-    widget.playerProcess.onRoundReset = null;
     super.dispose();
   }
 
