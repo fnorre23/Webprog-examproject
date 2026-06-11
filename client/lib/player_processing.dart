@@ -2,7 +2,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'game_types.dart';
 
 class PlayerProcess {
-  final socket = io.io('http://localhost:8080', io.OptionBuilder()
+  final socket = io.io('http://localhost:3000', io.OptionBuilder()
     .setTransports(['websocket', 'polling'])
     .disableAutoConnect()
     .build());
@@ -92,6 +92,13 @@ class PlayerProcess {
       hasFinished = true;
       hasLost = true;
       onLostContext?.call('Out of guesses!');
+    });
+
+    socket.on('lost_since_worse', (_) {
+      if (hasLost) return;
+      hasFinished = true;
+      hasLost = true;
+      onLostContext?.call("You weren't fast enough or used too many guesses!");
     });
 
     socket.on('game_over', (data) {

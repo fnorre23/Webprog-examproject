@@ -38,7 +38,7 @@ class _GamePageState extends State<GamePage> {
       setState(() {});
     };
     widget.playerProcess.onRoundReset = () {
-      if (!mounted) return;
+      if (!mounted || _lostReason != null) return;
       _roundCountdownTimer?.cancel();
       setState(() {
         _secondsLeft = 120;
@@ -230,25 +230,22 @@ class _GamePageState extends State<GamePage> {
         ),
         if (_lostReason != null)
           Positioned.fill(
-            child: Container(
-              color: Colors.black54,
-              child: Center(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_lostReason!, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        const Text("You've lost!", style: TextStyle(fontSize: 18)),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () => widget.onPlayerStateChange(PlayerState.spectating),
-                          child: const Text('Spectate'),
-                        ),
-                      ],
-                    ),
+            child: Center(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_lostReason!, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      const Text("You've lost!", style: TextStyle(fontSize: 18)),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => widget.onPlayerStateChange(PlayerState.spectating),
+                        child: const Text('Spectate'),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -256,25 +253,22 @@ class _GamePageState extends State<GamePage> {
           ),
         if (_won)
           Positioned.fill(
-            child: Container(
-              color: Colors.black54,
-              child: Center(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('You won!', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        const Text('Congratulations!', style: TextStyle(fontSize: 18)),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () => widget.onPlayerStateChange(PlayerState.lobby),
-                          child: const Text('Back to lobby'),
-                        ),
-                      ],
-                    ),
+            child: Center(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('You won!', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      const Text('Congratulations!', style: TextStyle(fontSize: 18)),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => widget.onPlayerStateChange(PlayerState.lobby),
+                        child: const Text('Back to lobby'),
+                      ),
+                    ],
                   ),
                 ),
               ),
