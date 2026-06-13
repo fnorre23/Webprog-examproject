@@ -1,8 +1,6 @@
 enum HitType { hit, partial, miss }
 
-
-//Behandler json fra backend
-class LetterInfo {
+class LetterInfo {    //process' json from backend
   final String char;
   final HitType? type;
 
@@ -12,15 +10,13 @@ class LetterInfo {
     final correctIdx = json['correct_idx'] as bool;
     final inWord = json['in_word'] as bool;
 
-
-    // Laver hit types uf fra json dataen
     final HitType type;
     if (correctIdx) {
-      type = HitType.hit;
+      type = HitType.hit;       //green
     } else if (inWord) {
-      type = HitType.partial;
+      type = HitType.partial;   //yellow
     } else {
-      type = HitType.miss;
+      type = HitType.miss;      //grey
     }
     return LetterInfo(char: (json['char'] as String?) ?? '', type: type);
   }

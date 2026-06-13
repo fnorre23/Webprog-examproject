@@ -21,7 +21,7 @@ class GamePage extends StatefulWidget {
 class _GamePageState extends State<GamePage> {
   final FocusNode _focusNode = FocusNode();
   List<String> _currentGuess = List.filled(5, '');
-  int _cursorPost = 0; // hvor vi er i gættet, altså hvor næste bogstav skal ind, eller hvor backspace skal fjerne fra
+  int _cursorPost = 0; //where the next letter goes
   int _secondsLeft = 120;
   Timer? _timer;
   int? _roundCountdown;

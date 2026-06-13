@@ -38,7 +38,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       if (!mounted) return;
       if (phase == 'playing') {
         if (widget.playerProcess.hasLost) {
-          widget.onPlayerStateChange(PlayerState.spectating);
+          widget.onPlayerStateChange(PlayerState.spectating); //for players that joined while a game is active
         } else if (_isReady) {
           _startCountdown();
         }
@@ -67,7 +67,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
     await prefs.setString(keyPlayerName, playerName);
     widget.playerProcess.joinGame(playerName);
     Navigator.of(context).pop();
-    print ('Player name submitted: ${_textEditingController.text.trim()}');
   }
 
   void _startCountdown() {

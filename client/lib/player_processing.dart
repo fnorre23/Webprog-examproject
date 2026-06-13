@@ -27,8 +27,6 @@ class PlayerProcess {
     socket.on('state', (data) {
       if (data == null || data['players'] == null) return;
 
-      print('State received: phase=${data['phase']}');
-
       final playersData = Map<String, dynamic>.from(data['players']);
       final players = playersData.map((id, player) => MapEntry(id, (player as Map)['name'] as String));
       onStateUpdate?.call(players);
@@ -40,7 +38,6 @@ class PlayerProcess {
 
       final phase = data['phase'] as String?;
       if (phase != null) {
-        print('Calling onPhaseChange with $phase, hasListener: ${onPhaseChange != null}');
         onPhaseChange?.call(phase);
       }
 
@@ -64,7 +61,6 @@ class PlayerProcess {
     });
 
     socket.on('guess_validation', (data) {
-      print('Recieved guess validation: $data');
       final map = Map<String, dynamic>.from(data as Map);
       if (data['is_valid'] != true) return;
       final row = parseGuess(map);
@@ -114,33 +110,25 @@ class PlayerProcess {
 
   }
 
-
-
   void joinGame(String name) {
     playerName = name;
-    socket.emit('join', name);
-    print('Player name sent: $name');
-  }
+    socket.emit('join', name);  }
 
   void readyUp() {
     socket.emit('ready_up');
-      print('Player is ready');
   }
 
   void unready() {
     socket.emit('unready');
-      print('Player is not ready');
   }
 
   void guess(String guess, int timeLeft) {
     socket.emit('guess', {'guess': guess, 'time_left': timeLeft});
-      print('Guess sent: $guess');
   }
 
   void timedOut() {
     if (hasFinished) return;
     hasFinished = true;
     socket.emit('timed_out');
-    print('Player timed out');
   }
 }
