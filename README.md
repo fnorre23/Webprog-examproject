@@ -28,8 +28,8 @@ cd Webprog-examproject
 docker compose up
 ```
 
-The site is then available ``` localhost:8080``` for the host. People on the same network can connect via your IP adress like this: 
-``` http://<your-local-ip>:8080```. 
+The site is then available ```http://localhost:8080``` for the host. People on the same network can connect via your IP adress like this: 
+```http://<your-local-ip>:8080```. 
 
 ### Without Docker
 
@@ -54,8 +54,8 @@ npm install
 # Run the server
 node src/index.ts
 ```
-The site is then available ``` localhost:8080``` for the host. People on the same network can connect via your IP adress like this: 
-``` http://<your-local-ip>:8080```. 
+The site is then available ```http://localhost:8080``` for the host. People on the same network can connect via your IP adress like this: 
+```http://<your-local-ip>:8080```. 
 
 ## Known bugs
 
