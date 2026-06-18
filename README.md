@@ -6,7 +6,7 @@ same amount of guesses result in a tiebreaker based on who was the fastest.
 
 ## Preview 📽️
 
-TODO: Video
+![Demo](wordle-battle-royale-demo.mkv)
 
 ## Technologies ⚙️
 
