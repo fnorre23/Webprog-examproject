@@ -6,7 +6,7 @@ same amount of guesses result in a tiebreaker based on who was the fastest.
 
 ## Preview 📽️
 
-https://github.com/fnorre23/Webprog-examproject/raw/master/demo.mp4)
+https://github.com/fnorre23/Webprog-examproject/raw/master/demo.mp4
 
 ## Technologies ⚙️
 
